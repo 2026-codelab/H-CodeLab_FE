@@ -1,0 +1,288 @@
+import { useMemo, type Dispatch, type SetStateAction } from "react";
+import * as S from "../styles";
+import type {
+	StudentGradeRow,
+	EditingGrade,
+	AssignmentItem,
+	ProblemGrade,
+} from "../types";
+import type { StudentSortDir, StudentSortKey } from "../../../../../utils/studentSort";
+import { SortableStudentColumnHeader } from "../../../../../components/SortableStudentColumnHeader";
+import {
+	GradeProblemCellDisplay,
+	GradeStatusLegendBar,
+} from "./GradeProblemCellDisplay";
+import * as GS from "../styles";
+
+export interface GradeManagementAssignmentTableProps {
+	grades: StudentGradeRow[];
+	filteredGrades: StudentGradeRow[];
+	gradeSortKey: StudentSortKey;
+	gradeSortDir: StudentSortDir;
+	onSortStudentHeader: (key: StudentSortKey) => void;
+	selectedAssignment: AssignmentItem | null;
+	editingGrade: EditingGrade | null;
+	setEditingGrade: (v: EditingGrade | null) => void;
+	gradeInputs: Record<string, number | "">;
+	setGradeInputs: Dispatch<SetStateAction<Record<string, number | "">>>;
+	comments: Record<string, string>;
+	handleSaveGrade: (
+		userId: number,
+		problemId: number,
+		score: number | "",
+		comment: string,
+	) => void;
+	handleViewCode: (userId: number, problemId: number) => void;
+	onOpenAssignmentReview?: (ctx: {
+		assignmentId: number;
+		userId: number;
+		problemId: number;
+		studentName: string;
+		problemTitle: string;
+		problem: ProblemGrade | null | undefined;
+	}) => void;
+	assignmentIdForReview: number | null;
+	onProblemDetail?: (problemId: number) => void;
+	totalOnly?: boolean;
+	onToggleTotalOnly?: (v: boolean) => void;
+	showLateOnly?: boolean;
+	onToggleShowLateOnly?: (v: boolean) => void;
+	/** 헤더 문제 표시 드롭다운과 연동 */
+	problemColumnFilter?: number | "all";
+}
+
+export default function GradeManagementAssignmentTable({
+	grades,
+	filteredGrades,
+	gradeSortKey,
+	gradeSortDir,
+	onSortStudentHeader,
+	selectedAssignment,
+	editingGrade,
+	setEditingGrade,
+	gradeInputs,
+	setGradeInputs,
+	comments,
+	handleSaveGrade,
+	handleViewCode,
+	onOpenAssignmentReview,
+	assignmentIdForReview,
+	onProblemDetail,
+	totalOnly = false,
+	onToggleTotalOnly,
+	showLateOnly = false,
+	onToggleShowLateOnly,
+	problemColumnFilter = "all",
+}: GradeManagementAssignmentTableProps) {
+	const assignmentDueAt =
+		selectedAssignment?.dueDate ??
+		(selectedAssignment as { endDate?: string } | null)?.endDate ??
+		(selectedAssignment as { deadline?: string } | null)?.deadline;
+	const hasProblems =
+		grades[0]?.problemGrades && grades[0].problemGrades.length > 0;
+
+	const allProblemGrades = grades[0]?.problemGrades ?? [];
+	const problemGradesForCol = useMemo(() => {
+		if (problemColumnFilter === "all") return allProblemGrades;
+		const fp = allProblemGrades.filter(
+			(p) => p.problemId === problemColumnFilter,
+		);
+		return fp.length ? fp : allProblemGrades;
+	}, [allProblemGrades, problemColumnFilter]);
+	return (
+		<S.GradeTablePageWrapper>
+			<GradeStatusLegendBar
+				totalOnly={totalOnly}
+				onToggleTotalOnly={onToggleTotalOnly}
+				showLateOnly={showLateOnly}
+				onToggleShowLateOnly={onToggleShowLateOnly}
+			/>
+			<S.GradeTableHorizontalScroll>
+			<S.CourseTableWithStickyRight>
+				<colgroup>
+					<col style={{ width: S.STICKY_COL_1_WIDTH }} />
+					<col style={{ width: S.STICKY_COL_2_WIDTH }} />
+					{!totalOnly && hasProblems
+						? problemGradesForCol.map((p) => (
+								<col key={p.problemId} style={{ width: S.COL_PROBLEM_WIDTH }} />
+							))
+						: null}
+					<col style={{ width: S.COL_SCORE_WIDTH }} />
+					<col style={{ width: S.STICKY_RIGHT_TOTAL_WIDTH }} />
+					<col style={{ width: S.STICKY_RIGHT_RATIO_WIDTH }} />
+				</colgroup>
+				<thead>
+					{!totalOnly && hasProblems ? (
+						<>
+							<tr>
+								<S.SortableStudentHeaderTh
+									rowSpan={2}
+									scope="col"
+									onClick={() => onSortStudentHeader("studentName")}
+									title="이름순 정렬 (클릭 시 오름·내림)"
+								>
+									<SortableStudentColumnHeader
+										label="학생"
+										sortKey="studentName"
+										activeKey={gradeSortKey}
+										dir={gradeSortDir}
+									/>
+								</S.SortableStudentHeaderTh>
+								<S.SortableStudentHeaderTh
+									rowSpan={2}
+									scope="col"
+									onClick={() => onSortStudentHeader("studentId")}
+									title="학번순 정렬 (클릭 시 오름·내림)"
+								>
+									<SortableStudentColumnHeader
+										label="학번"
+										sortKey="studentId"
+										activeKey={gradeSortKey}
+										dir={gradeSortDir}
+									/>
+								</S.SortableStudentHeaderTh>
+								<S.CourseAssignmentHeader
+									as="th"
+									colSpan={problemGradesForCol.length}
+								>
+									<S.ItemTitle>
+										{selectedAssignment?.title ?? "과제"}
+									</S.ItemTitle>
+								</S.CourseAssignmentHeader>
+								<th rowSpan={2}>총점</th>
+								<th rowSpan={2}>전체 총점</th>
+								<th rowSpan={2}>비율</th>
+							</tr>
+							<tr>
+								{problemGradesForCol.map((p) => (
+									<S.ProblemHeader key={p.problemId} as="th">
+										{onProblemDetail ? (
+											<button
+												type="button"
+												onClick={() => onProblemDetail(p.problemId)}
+												style={{
+													background: "none",
+													border: "none",
+													cursor: "pointer",
+													textAlign: "center",
+													padding: 0,
+													font: "inherit",
+													width: "100%",
+												}}
+											>
+												<S.ProblemTitle>{p.problemTitle ?? ""}</S.ProblemTitle>
+											</button>
+										) : (
+											<>
+												<S.ProblemTitle>{p.problemTitle ?? ""}</S.ProblemTitle>
+											</>
+										)}
+									</S.ProblemHeader>
+								))}
+							</tr>
+						</>
+					) : (
+						<tr>
+							<S.SortableStudentHeaderTh
+								scope="col"
+								onClick={() => onSortStudentHeader("studentName")}
+								title="이름순 정렬 (클릭 시 오름·내림)"
+							>
+								<SortableStudentColumnHeader
+									label="학생"
+									sortKey="studentName"
+									activeKey={gradeSortKey}
+									dir={gradeSortDir}
+								/>
+							</S.SortableStudentHeaderTh>
+							<S.SortableStudentHeaderTh
+								scope="col"
+								onClick={() => onSortStudentHeader("studentId")}
+								title="학번순 정렬 (클릭 시 오름·내림)"
+							>
+								<SortableStudentColumnHeader
+									label="학번"
+									sortKey="studentId"
+									activeKey={gradeSortKey}
+									dir={gradeSortDir}
+								/>
+							</S.SortableStudentHeaderTh>
+							<th>총점</th>
+							<th>전체 총점</th>
+							<th>비율</th>
+						</tr>
+					)}
+				</thead>
+				<tbody>
+					{filteredGrades.map((student) => {
+						const totalScore = student.totalScore ?? 0;
+						const totalPoints = student.totalPoints ?? 0;
+						return (
+							<tr key={student.userId}>
+								<S.TdStudentName>{student.studentName}</S.TdStudentName>
+								<S.TdStudentId>{student.studentId}</S.TdStudentId>
+								{!totalOnly && hasProblems ? (
+									problemGradesForCol.map((col) => {
+										const problem = student.problemGrades?.find(
+											(pg) => pg.problemId === col.problemId,
+										);
+										return (
+											<S.TdCourseProblemCell key={col.problemId}>
+												<GradeProblemCellDisplay
+													problem={problem}
+													fallbackPoints={col.points ?? 1}
+													dueAt={assignmentDueAt}
+													showLateOnly={showLateOnly}
+													trailingActions={
+														onOpenAssignmentReview &&
+														assignmentIdForReview != null ? (
+															<GS.BtnReviewCode
+																type="button"
+																title="코드 확인 · 코멘트 · 반려"
+																onClick={() =>
+																	onOpenAssignmentReview({
+																		assignmentId: assignmentIdForReview,
+																		userId: student.userId,
+																		problemId: col.problemId,
+																		studentName: student.studentName ?? "",
+																		problemTitle:
+																			col.problemTitle ??
+																			problem?.problemTitle ??
+																			"",
+																		problem,
+																	})
+																}
+															>
+																{"</>"}
+															</GS.BtnReviewCode>
+														) : undefined
+													}
+												/>
+											</S.TdCourseProblemCell>
+										);
+									})
+								) : null}
+								<S.TdCourseAssignmentTotalCell>
+									<strong>
+										{totalScore} / {totalPoints}
+									</strong>
+								</S.TdCourseAssignmentTotalCell>
+								<td>
+									<strong>
+										{totalScore} / {totalPoints}
+									</strong>
+								</td>
+								<td>
+									{totalPoints > 0
+										? `${((totalScore / totalPoints) * 100).toFixed(1)}%`
+										: "-"}
+								</td>
+							</tr>
+						);
+					})}
+				</tbody>
+			</S.CourseTableWithStickyRight>
+			</S.GradeTableHorizontalScroll>
+		</S.GradeTablePageWrapper>
+	);
+}

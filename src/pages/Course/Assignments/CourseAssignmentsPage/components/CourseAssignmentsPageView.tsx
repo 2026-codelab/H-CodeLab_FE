@@ -1,0 +1,278 @@
+import CourseSidebar from "../../../../../components/Course/CourseSidebar";
+import CourseHeader from "../../../../../components/Course/CourseHeader";
+import LoadingSpinner from "../../../../../components/UI/LoadingSpinner";
+import type { CourseAssignmentsPageHookReturn } from "../hooks/useCourseAssignmentsPage";
+import * as S from "../styles";
+
+export default function CourseAssignmentsPageView(
+	d: CourseAssignmentsPageHookReturn,
+) {
+	if (d.loading) {
+		return (
+			<S.Container $isCollapsed={d.isSidebarCollapsed}>
+				<CourseSidebar
+					sectionId={d.sectionId}
+					activeMenu={d.activeMenu}
+					onMenuClick={d.handleMenuClick}
+					isCollapsed={d.isSidebarCollapsed}
+				onToggleSidebar={d.handleToggleSidebar}
+				/>
+				<S.Content $isCollapsed={d.isSidebarCollapsed}>
+					<LoadingSpinner />
+				</S.Content>
+			</S.Container>
+		);
+	}
+
+	if (d.error) {
+		return (
+			<S.Container $isCollapsed={d.isSidebarCollapsed}>
+				<CourseSidebar
+					sectionId={d.sectionId}
+					activeMenu={d.activeMenu}
+					onMenuClick={d.handleMenuClick}
+					isCollapsed={d.isSidebarCollapsed}
+				onToggleSidebar={d.handleToggleSidebar}
+				/>
+				<S.Content $isCollapsed={d.isSidebarCollapsed}>
+					<S.ErrorMessage>
+						<p>{d.error}</p>
+						<button type="button" onClick={d.fetchAssignmentsData}>
+							다시 시도
+						</button>
+					</S.ErrorMessage>
+				</S.Content>
+			</S.Container>
+		);
+	}
+
+	return (
+		<S.Container $isCollapsed={d.isSidebarCollapsed}>
+			<CourseSidebar
+				sectionId={d.sectionId}
+				activeMenu={d.activeMenu}
+				onMenuClick={d.handleMenuClick}
+				isCollapsed={d.isSidebarCollapsed}
+			onToggleSidebar={d.handleToggleSidebar}
+			/>
+
+			<S.Content $isCollapsed={d.isSidebarCollapsed}>
+				<CourseHeader
+					courseName={
+						d.sectionInfo?.courseTitle
+							? d.sectionInfo.courseTitle
+							: d.sectionInfo?.courseName || "강의"
+					}
+					onToggleSidebar={d.handleToggleSidebar}
+					isSidebarCollapsed={d.isSidebarCollapsed}
+				/>
+
+				<S.AssignmentsBody>
+					<S.AssignmentsHeader>
+						<S.AssignmentsTitle>과제</S.AssignmentsTitle>
+						<S.AssignmentsSummary>
+							과제 {d.assignments.length} · 문제{" "}
+							{d.assignments.reduce((sum, a) => sum + a.totalProblems, 0)} · 기본: 최근 추가순
+						</S.AssignmentsSummary>
+						<S.SortSelect
+							value={d.assignmentSort}
+							onChange={(e) =>
+								d.setAssignmentSort(
+									e.target.value as "recentFirst" | "oldestFirst" | "unsolvedFirst",
+								)
+							}
+						>
+							<option value="recentFirst">최근 추가순</option>
+							<option value="oldestFirst">오래된 과제순</option>
+							<option value="unsolvedFirst">미해결 문제 많은순</option>
+						</S.SortSelect>
+					</S.AssignmentsHeader>
+
+					<S.AssignmentsAccordion>
+						{d.sortedAssignments.length > 0 ? (
+							d.sortedAssignments.map((assignment, index) => (
+								<S.AccordionItem 
+									key={assignment.id}
+									$inactive={d.isManager && assignment.active === false}
+								>
+									<S.AccordionHeader
+										$expanded={d.expandedAssignmentIds.includes(assignment.id)}
+										$inactive={d.isManager && assignment.active === false}
+										onClick={() => d.toggleAssignment(assignment.id)}
+									>
+										<S.AccordionHeaderLeft>
+											<S.AccordionArrow>
+												{d.expandedAssignmentIds.includes(assignment.id)
+													? "▼"
+													: "▶"}
+											</S.AccordionArrow>
+											<S.AccordionNumber>
+												{String(index + 1).padStart(2, "0")}
+											</S.AccordionNumber>
+											<S.AccordionTitle>{assignment.title}</S.AccordionTitle>
+											{d.isManager && assignment.active === false && (
+												<S.InactiveBadge>비활성화</S.InactiveBadge>
+											)}
+											{assignment.dDay !== null && (
+												<S.AccordionDDay $expired={assignment.dDay < 0}>
+													{assignment.dDay < 0
+														? `D+${Math.abs(assignment.dDay)}`
+														: `D-${assignment.dDay}`}
+												</S.AccordionDDay>
+											)}
+										</S.AccordionHeaderLeft>
+										<S.AccordionHeaderRight>
+											<S.AccordionDeadline>
+												[마감일 |{" "}
+												{(() => {
+													const deadline = d.formatDeadline(
+														assignment.endDate,
+													);
+													return deadline
+														? `${deadline} 까지 제출`
+														: "미설정";
+												})()}
+												]
+											</S.AccordionDeadline>
+											<S.ProgressInfo>
+												<S.MiniProgressBar>
+													<S.MiniProgressFill $progress={assignment.progress} />
+												</S.MiniProgressBar>
+												<S.AccordionProgress>
+													{assignment.submittedProblems}/
+													{assignment.totalProblems}
+												</S.AccordionProgress>
+											</S.ProgressInfo>
+										</S.AccordionHeaderRight>
+									</S.AccordionHeader>
+
+									{d.expandedAssignmentIds.includes(assignment.id) && (
+										<S.AccordionContent>
+											<S.AccordionDescription>
+												<p>
+													{assignment.description ||
+														`${assignment.title}을 시작합니다.`}
+												</p>
+											</S.AccordionDescription>
+
+											<S.AccordionProblemsSection>
+												<S.ProblemsSectionRow>
+													<S.ProblemsSubtitle>문제</S.ProblemsSubtitle>
+												</S.ProblemsSectionRow>
+												{assignment.problems && assignment.problems.length > 0 ? (
+													<S.AccordionProblemsList>
+														{assignment.problems.map((problem) => {
+															const badgeType =
+																problem.status === "ACCEPTED"
+																	? problem.isOnTime === false
+																		? "correctLate"
+																		: "correct"
+																	: problem.status === "SUBMITTED"
+																		? problem.isOnTime === false
+																			? "wrongLate"
+																			: "wrong"
+																		: "notSubmitted";
+															const badgeLabel =
+																badgeType === "correct"
+																	? "정답"
+																	: badgeType === "correctLate"
+																		? "정답 및 지각"
+																		: badgeType === "wrong"
+																			? "오답"
+																			: badgeType === "wrongLate"
+																				? "오답 및 지각"
+																				: "미제출";
+															const showReject =
+																problem.gradeRejected === true;
+															const highlighted =
+																d.highlightProblemId != null &&
+																d.highlightProblemId === problem.id;
+															return (
+																<S.AccordionProblemItem
+																	key={problem.id}
+																	id={`course-assignment-problem-${problem.id}`}
+																	$highlight={highlighted}
+																	onClick={() =>
+																		d.handleProblemClick(assignment.id, problem.id)
+																	}
+																>
+																	<S.AccordionProblemTopRow>
+																		<S.ProblemTitle>{problem.title}</S.ProblemTitle>
+																		<S.ProblemStatusBlock>
+																			{problem.status !== "NOT_SUBMITTED" &&
+																				problem.submittedAt && (
+																					<S.ProblemSubmissionMeta>
+																						<span>
+																							제출 시간 :{" "}
+																							{d.formatSubmissionTime(problem.submittedAt)}
+																						</span>
+																						{problem.isOnTime === false &&
+																							problem.minutesLate != null && (
+																								<S.LateMinutes>
+																									·{" "}
+																									{d.formatMinutesLate(problem.minutesLate)}
+																								</S.LateMinutes>
+																							)}
+																					</S.ProblemSubmissionMeta>
+																				)}
+																			{showReject ? (
+																				<S.ProblemBadge $badgeType="rejected">
+																					반려
+																				</S.ProblemBadge>
+																			) : null}
+																			<S.ProblemBadge $badgeType={badgeType}>
+																				{badgeLabel}
+																			</S.ProblemBadge>
+																		</S.ProblemStatusBlock>
+																	</S.AccordionProblemTopRow>
+																	{showReject ? (
+																		<S.ProblemRejectionBox>
+																			<S.ProblemRejectionHead>
+																				피드백
+																			</S.ProblemRejectionHead>
+																			<S.ProblemRejectionTime>
+																				반려 시간:{" "}
+																				{problem.gradeRejectedAt
+																					? d.formatSubmissionTime(
+																							problem.gradeRejectedAt,
+																						)
+																					: "—"}
+																			</S.ProblemRejectionTime>
+																			{problem.gradeComment?.trim() ? (
+																				<S.ProblemRejectionComment>
+																					{problem.gradeComment}
+																				</S.ProblemRejectionComment>
+																			) : (
+																				<S.ProblemRejectionComment
+																					style={{ color: "#78716c", fontStyle: "italic" }}
+																				>
+																					등록된 코멘트가 없습니다.
+																				</S.ProblemRejectionComment>
+																			)}
+																		</S.ProblemRejectionBox>
+																	) : null}
+																</S.AccordionProblemItem>
+															);
+														})}
+													</S.AccordionProblemsList>
+												) : (
+													<S.NoProblemsMessage>
+														<p>등록된 문제가 없습니다.</p>
+													</S.NoProblemsMessage>
+												)}
+											</S.AccordionProblemsSection>
+										</S.AccordionContent>
+									)}
+								</S.AccordionItem>
+							))
+						) : (
+							<S.NoAssignmentsMessage>
+								<p>등록된 과제가 없습니다.</p>
+							</S.NoAssignmentsMessage>
+						)}
+					</S.AssignmentsAccordion>
+				</S.AssignmentsBody>
+			</S.Content>
+		</S.Container>
+	);
+}

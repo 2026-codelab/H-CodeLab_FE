@@ -1,0 +1,1029 @@
+import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
+import { FaFileExport, FaFileImport } from "react-icons/fa";
+import TutorLayout from "../../../../../layouts/TutorLayout";
+import ReactMarkdown from "react-markdown";
+import rehypeRaw from "rehype-raw";
+import Alert from "../../../../../components/UI/Alert";
+import EmptyState from "../../../../../components/UI/EmptyState";
+import LoadingSpinner from "../../../../../components/UI/LoadingSpinner";
+import * as S from "../styles";
+import type { ProblemManagementHookReturn } from "../hooks/useProblemManagement";
+import { stripDuplicateInputOutputExample } from "../../ProblemEdit/utils/problemEditUtils";
+
+// ──────────────────────────────────────────────
+// 마크다운 코드블록 렌더링 (ProblemPreview와 동일한 방식)
+// react-markdown v10에서 'inline' prop 제거 → Context로 구분
+// ──────────────────────────────────────────────
+const InsidePreContext = React.createContext(false);
+
+function ModalMarkdownPre({ children }: { children?: React.ReactNode }) {
+	return (
+		<InsidePreContext.Provider value={true}>
+			<pre className="problem-description-code-block">{children}</pre>
+		</InsidePreContext.Provider>
+	);
+}
+
+function ModalMarkdownCode({
+	children,
+	className,
+}: {
+	children?: React.ReactNode;
+	className?: string;
+}) {
+	const insidePre = React.useContext(InsidePreContext);
+	if (insidePre) {
+		return <code className={className}>{children}</code>;
+	}
+	return <code className="problem-description-inline-code">{children}</code>;
+}
+
+/**
+ * 빈 ## 예제 섹션 제거 (예제를 추가하지 않았는데 자동 생성된 경우)
+ * getFullDescriptionForBackend 이전 버전에서 always-append 로직으로 저장된 경우 처리
+ */
+function stripEmptyExamplesSection(text: string): string {
+	// 빈 코드블록 패턴: ```\n\n```  (내용 없음)
+	return text.replace(/\n\n## 예제(?:\n\n### 예제 [^\n]+\n```\n\n```)+/g, "");
+}
+
+export default function ProblemManagementView(d: ProblemManagementHookReturn) {
+	const [dropdownRect, setDropdownRect] = useState<{
+		top: number;
+		right: number;
+	} | null>(null);
+
+	useEffect(() => {
+		if (d.openMoreMenu == null) return;
+		const handleScroll = () => {
+			d.setOpenMoreMenu(null);
+			setDropdownRect(null);
+		};
+		const handleClickOutside = () => {
+			d.setOpenMoreMenu(null);
+			setDropdownRect(null);
+		};
+		window.addEventListener("scroll", handleScroll, true);
+		const id = setTimeout(
+			() => document.addEventListener("click", handleClickOutside),
+			0,
+		);
+		return () => {
+			window.removeEventListener("scroll", handleScroll, true);
+			clearTimeout(id);
+			document.removeEventListener("click", handleClickOutside);
+		};
+	}, [d.openMoreMenu]);
+
+	if (d.loading) {
+		return (
+			<TutorLayout>
+				<LoadingSpinner message="문제 목록을 불러오는 중..." />
+			</TutorLayout>
+		);
+	}
+
+	return (
+		<TutorLayout>
+			<S.Container>
+				{d.alertMessage && (
+					<Alert
+						type={d.alertType}
+						message={d.alertMessage}
+						onClose={() => d.setAlertMessage(null)}
+					/>
+				)}
+
+				<S.TitleHeader>
+					<S.TitleLeft>
+						<S.Title>문제 관리</S.Title>
+						<S.TitleStats>
+							<S.StatBadge>총 {d.problems.length}개 문제</S.StatBadge>
+						</S.TitleStats>
+					</S.TitleLeft>
+					<S.TitleRight>
+						<S.ExportButton
+							style={{ background: "rgba(255,255,255,0.85)" }}
+							onClick={() => d.navigate("/tutor/problems/import")}
+						>
+							<FaFileImport style={{ marginRight: "0.5rem", flexShrink: 0 }} />
+							문제 가져오기
+						</S.ExportButton>
+						<S.ExportButton
+							onClick={() => {
+								if (d.selectedProblemIds.length > 0) {
+									d.handleExportBulk();
+								} else {
+									d.handleExportFiltered();
+								}
+							}}
+							disabled={d.isExporting || d.filteredProblems.length === 0}
+							title={
+								d.selectedProblemIds.length > 0
+									? `선택한 ${d.selectedProblemIds.length}개 문제 내보내기`
+									: "현재 필터 결과 전체 내보내기"
+							}
+						>
+							<FaFileExport style={{ marginRight: "0.5rem", flexShrink: 0 }} />
+							{d.isExporting ? "내보내는 중..." : "전체 내보내기"}
+						</S.ExportButton>
+						<S.CreateButton
+							onClick={() => d.navigate("/tutor/problems/create")}
+						>
+							+ 새 문제 만들기
+						</S.CreateButton>
+					</S.TitleRight>
+				</S.TitleHeader>
+
+				<S.FiltersSection>
+					<S.SearchBox>
+						<S.SearchInput
+							type="text"
+							placeholder="문제명으로 검색..."
+							value={d.searchTerm}
+							onChange={(e) => d.setSearchTerm(e.target.value)}
+						/>
+					</S.SearchBox>
+					<S.FilterGroup>
+						<S.FilterSelect
+							id="filter-original"
+							value={d.filterOriginalOnly}
+							onChange={(e) =>
+								d.setFilterOriginalOnly(e.target.value as "ALL" | "ORIGINAL")
+							}
+						>
+							<option value="ALL">전체 문제</option>
+							<option value="ORIGINAL">원본(오리지널)만</option>
+						</S.FilterSelect>
+					</S.FilterGroup>
+					<S.FilterGroup>
+						<S.FilterSelect
+							id="filter-usage"
+							value={d.filterUsageStatus}
+							onChange={(e) => {
+								d.setFilterUsageStatus(e.target.value);
+								if (e.target.value !== "USED") {
+									d.setFilterCourse("ALL");
+									d.setFilterAssignment("ALL");
+								}
+							}}
+						>
+							<option value="ALL">전체 사용 여부</option>
+							<option value="USED">사용 중</option>
+							<option value="UNUSED">미사용</option>
+						</S.FilterSelect>
+					</S.FilterGroup>
+					{d.filterUsageStatus === "USED" && (
+						<>
+							<S.FilterGroup>
+								<S.FilterSelect
+									id="filter-course"
+									value={d.filterCourse}
+									onChange={(e) => {
+										d.setFilterCourse(e.target.value);
+										d.setFilterAssignment("ALL");
+									}}
+									disabled={d.loadingUsageData}
+								>
+									<option value="ALL">전체 수업</option>
+									{d.sections.map((section) => (
+										<option key={section.sectionId} value={section.sectionId}>
+											{section.courseTitle} ({section.year}년{" "}
+											{section.semester === "SPRING"
+												? "1학기"
+												: section.semester === "SUMMER"
+													? "여름학기"
+													: section.semester === "FALL"
+														? "2학기"
+														: "겨울학기"}
+											{section.sectionNumber
+												? ` - ${section.sectionNumber}분반`
+												: ""}
+											)
+										</option>
+									))}
+								</S.FilterSelect>
+							</S.FilterGroup>
+							{d.filterCourse !== "ALL" && (
+								<S.FilterGroup>
+									<S.FilterSelect
+										id="filter-assignment"
+										value={d.filterAssignment}
+										onChange={(e) => d.setFilterAssignment(e.target.value)}
+										disabled={d.loadingUsageData}
+									>
+										<option value="ALL">전체 과제</option>
+										{d.assignments.map((assignment) => (
+											<option key={assignment.id} value={assignment.id}>
+												{assignment.assignmentNumber &&
+													`${assignment.assignmentNumber}. `}
+												{assignment.title}
+											</option>
+										))}
+									</S.FilterSelect>
+								</S.FilterGroup>
+							)}
+						</>
+					)}
+					<S.FilterGroup>
+						<S.FilterSelect
+							id="filter-difficulty"
+							value={d.filterDifficulty}
+							onChange={(e) => d.setFilterDifficulty(e.target.value)}
+						>
+							<option value="ALL">전체 난이도</option>
+							<option value="1">1 (쉬움)</option>
+							<option value="2">2 (보통)</option>
+							<option value="3">3 (어려움)</option>
+							<option value="4">4 (매우 어려움)</option>
+							<option value="5">5 (극도 어려움)</option>
+						</S.FilterSelect>
+					</S.FilterGroup>
+					{d.availableTags.length > 0 && (
+						<S.FilterGroup>
+							<S.FilterSelect
+								id="filter-tag"
+								value={d.filterTag}
+								onChange={(e) => d.setFilterTag(e.target.value)}
+							>
+								<option value="ALL">전체 태그</option>
+								{d.availableTags.map((tag) => (
+									<option key={tag} value={tag}>
+										{tag}
+									</option>
+								))}
+							</S.FilterSelect>
+						</S.FilterGroup>
+					)}
+				</S.FiltersSection>
+
+				<S.UsageBadgeLegend>
+					<span>뱃지 의미:</span>
+					<span>
+						<S.UsageBadgeAssignment as="span" style={{ cursor: "default" }}>
+							과제
+						</S.UsageBadgeAssignment>
+						과제에서 사용 중
+					</span>
+					<span>
+						<S.UsageBadgeProblemSet as="span" style={{ cursor: "default" }}>
+							문제집
+						</S.UsageBadgeProblemSet>
+						문제집에서 사용 중
+					</span>
+					<span>
+						<S.UsageBadgeQuiz as="span" style={{ cursor: "default" }}>
+							코딩테스트
+						</S.UsageBadgeQuiz>
+						코딩테스트에서 사용 중
+					</span>
+				</S.UsageBadgeLegend>
+				<S.UsageBadgeLegend>
+					<span>
+						☑ 체크박스로 여러 문제를 선택한 뒤, 위 &quot;전체 내보내기&quot;
+						또는 선택 바의 &quot;선택한 문제 ZIP으로 내보내기&quot;로 CodeLab
+						problem 포맷 ZIP을 내보낼 수 있습니다.
+					</span>
+				</S.UsageBadgeLegend>
+
+				{d.selectedProblemIds.length > 0 && (
+					<S.SelectionBar>
+						<span>{d.selectedProblemIds.length}개 문제 선택됨</span>
+						<S.SelectionBarButton onClick={d.clearSelection}>
+							선택 해제
+						</S.SelectionBarButton>
+						<S.SelectionBarButton
+							onClick={d.handleExportBulk}
+							disabled={d.isExporting}
+						>
+							{d.isExporting
+								? "내보내는 중..."
+								: "선택한 문제 ZIP으로 내보내기"}
+						</S.SelectionBarButton>
+					</S.SelectionBar>
+				)}
+
+				<S.ResponsiveWrapper>
+					<S.TableContainer>
+						{d.filteredProblems.length > 0 ? (
+							<S.Table>
+								<thead>
+									<tr>
+										<th className="checkbox-cell">
+											<input
+												type="checkbox"
+												checked={d.isAllFilteredSelected}
+												onChange={d.selectAllFiltered}
+												aria-label="전체 선택"
+											/>
+										</th>
+										<th className="id-cell">ID</th>
+										<th className="title-cell">문제 제목</th>
+										<th className="meta-cell">시간 제한</th>
+										<th className="meta-cell">메모리 제한</th>
+										<th className="meta-cell">생성일</th>
+										<th className="actions-cell">관리</th>
+									</tr>
+								</thead>
+								<tbody>
+									{d.filteredProblems.map((problem) => (
+										<tr key={problem.id}>
+											<td className="checkbox-cell">
+												<input
+													type="checkbox"
+													checked={d.selectedProblemIds.includes(problem.id)}
+													onChange={() => d.toggleProblemSelection(problem.id)}
+													aria-label={`${problem.title} 선택`}
+												/>
+											</td>
+											<S.IdCell>
+												<S.IdText>#{problem.id}</S.IdText>
+											</S.IdCell>
+											<S.TitleCell>
+												<S.TitleWrapper>
+													<S.TitleContent>
+														<S.TitleRow>
+															<S.TitleText
+																$clickable
+																onClick={() => {
+																	d.setSelectedProblem(problem);
+																	d.setShowProblemModal(true);
+																}}
+															>
+																{problem.title}
+															</S.TitleText>
+															{(problem.assignmentCount ?? 0) > 0 && (
+																<S.UsageBadgeAssignment
+																	title={`${problem.assignmentCount}개 과제에서 사용 중`}
+																>
+																	과제
+																	<S.UsageCount>
+																		({problem.assignmentCount})
+																	</S.UsageCount>
+																</S.UsageBadgeAssignment>
+															)}
+															{(problem.problemSetCount ?? 0) > 0 && (
+																<S.UsageBadgeProblemSet
+																	title={`${problem.problemSetCount}개 문제집에서 사용 중`}
+																>
+																	문제집
+																	<S.UsageCount>
+																		({problem.problemSetCount})
+																	</S.UsageCount>
+																</S.UsageBadgeProblemSet>
+															)}
+															{(problem.quizCount ?? 0) > 0 && (
+																<S.UsageBadgeQuiz
+																	title={`${problem.quizCount}개 코딩테스트에서 사용 중`}
+																>
+																	코딩테스트
+																	<S.UsageCount>
+																		({problem.quizCount})
+																	</S.UsageCount>
+																</S.UsageBadgeQuiz>
+															)}
+														</S.TitleRow>
+														{d.getProblemTags(problem).length > 0 && (
+															<S.Tags>
+																{d.getProblemTags(problem).map((tag, idx) => (
+																	<S.Tag key={idx}>{tag}</S.Tag>
+																))}
+															</S.Tags>
+														)}
+													</S.TitleContent>
+												</S.TitleWrapper>
+											</S.TitleCell>
+											<S.MetaCell>
+												{problem.timeLimit ? `${problem.timeLimit}초` : "-"}
+											</S.MetaCell>
+											<S.MetaCell>
+												{problem.memoryLimit ? `${problem.memoryLimit}MB` : "-"}
+											</S.MetaCell>
+											<S.MetaCell>{d.formatDate(problem.createdAt)}</S.MetaCell>
+											<S.ActionsCell>
+												<S.ActionsInline>
+													<S.PrimaryActions>
+														<S.TableActionButton
+															$edit
+															onClick={() =>
+																d.navigate(`/tutor/problems/${problem.id}/edit`)
+															}
+														>
+															수정
+														</S.TableActionButton>
+														<S.TableActionButton
+															$secondary
+															onClick={() => d.handleCopyClick(problem)}
+														>
+															복사
+														</S.TableActionButton>
+														{problem.isUsed && (
+															<S.TableActionButton
+																$secondary
+																onClick={() => d.handleUsageClick(problem)}
+																title="사용 현황 보기"
+															>
+																사용 현황
+															</S.TableActionButton>
+														)}
+													</S.PrimaryActions>
+													<S.SecondaryActions>
+														<S.SecondaryActionsLayer>
+															<S.MoreMenu>
+																<S.TableActionButton
+																	$secondary
+																	$delete
+																	onClick={(e) => {
+																		e.stopPropagation();
+																		const btn = e.currentTarget;
+																		const rect = btn.getBoundingClientRect();
+																		if (d.openMoreMenu === problem.id) {
+																			d.setOpenMoreMenu(null);
+																			setDropdownRect(null);
+																		} else {
+																			setDropdownRect({
+																				top: rect.bottom + 4,
+																				right: window.innerWidth - rect.right,
+																			});
+																			d.setOpenMoreMenu(problem.id);
+																		}
+																	}}
+																	title="더보기"
+																>
+																	⋯
+																</S.TableActionButton>
+																{d.openMoreMenu === problem.id &&
+																	dropdownRect &&
+																	createPortal(
+																		<S.MoreDropdown
+																			$fixed
+																			style={
+																				{
+																					"--dropdown-top": `${dropdownRect.top}px`,
+																					"--dropdown-right": `${dropdownRect.right}px`,
+																				} as React.CSSProperties
+																			}
+																			onClick={(e) => e.stopPropagation()}
+																		>
+																			<S.MoreMenuItem
+																				onClick={(e) => {
+																					e.stopPropagation();
+																					d.handleExportSingle(problem);
+																					d.setOpenMoreMenu(null);
+																					setDropdownRect(null);
+																				}}
+																				style={{ cursor: "pointer" }}
+																			>
+																				내보내기
+																			</S.MoreMenuItem>
+																			<S.MoreMenuItem
+																				$delete
+																				onClick={(e) => {
+																					e.stopPropagation();
+																					d.handleDeleteClick(problem);
+																					d.setOpenMoreMenu(null);
+																					setDropdownRect(null);
+																				}}
+																			>
+																				삭제
+																			</S.MoreMenuItem>
+																		</S.MoreDropdown>,
+																		document.body,
+																	)}
+															</S.MoreMenu>
+														</S.SecondaryActionsLayer>
+													</S.SecondaryActions>
+												</S.ActionsInline>
+											</S.ActionsCell>
+										</tr>
+									))}
+								</tbody>
+							</S.Table>
+						) : (
+							<EmptyState
+								title="등록된 문제가 없습니다"
+								message="새로운 문제를 만들어보세요"
+								actionLabel="새 문제 만들기"
+								onAction={() => d.navigate("/tutor/problems/create")}
+							/>
+						)}
+					</S.TableContainer>
+				</S.ResponsiveWrapper>
+
+				{/* 문제 설명 모달 */}
+				{d.showProblemModal && d.selectedProblem && (
+					<S.ModalOverlay onClick={d.closeProblemModal}>
+						<S.ModalContent $large onClick={(e) => e.stopPropagation()}>
+							<S.ModalHeader>
+								<h2>{d.selectedProblem.title}</h2>
+								<S.ModalClose onClick={d.closeProblemModal}>×</S.ModalClose>
+							</S.ModalHeader>
+							<S.ModalBody>
+								{d.getProblemTags(d.selectedProblem).length > 0 && (
+									<S.TagsInModal>
+										{d.getProblemTags(d.selectedProblem).map((tag, idx) => (
+											<S.TagInModal key={idx}>{tag}</S.TagInModal>
+										))}
+									</S.TagsInModal>
+								)}
+								{(() => {
+									const rawDesc =
+										d.selectedProblem.description || "*문제 설명이 없습니다.*";
+									// 중복된 "## 입력 형식"~"## 예제" 블록 제거 후, 빈 예제 섹션 제거
+									const desc = stripEmptyExamplesSection(
+										stripDuplicateInputOutputExample(rawDesc),
+									);
+									return (
+										<S.DescriptionContent>
+											<ReactMarkdown
+												rehypePlugins={[rehypeRaw]}
+												components={{
+													pre: ModalMarkdownPre,
+													code: ModalMarkdownCode,
+													h1: ({ node: _n, ...props }: any) => (
+														<h1 className="problem-description-h1" {...props} />
+													),
+													h2: ({ node: _n, ...props }: any) => (
+														<h2 className="problem-description-h2" {...props} />
+													),
+													h3: ({ node: _n, ...props }: any) => (
+														<h3 className="problem-description-h3" {...props} />
+													),
+													p: ({ node: _n, ...props }: any) => (
+														<p
+															className="problem-description-paragraph"
+															{...props}
+														/>
+													),
+												}}
+											>
+												{desc}
+											</ReactMarkdown>
+										</S.DescriptionContent>
+									);
+								})()}
+							</S.ModalBody>
+						</S.ModalContent>
+					</S.ModalOverlay>
+				)}
+
+				{/* 삭제 확인 모달 */}
+				{d.showDeleteModal && d.problemToDelete && (
+					<S.ModalOverlay onClick={d.closeDeleteModal}>
+						<S.ModalContent onClick={(e) => e.stopPropagation()}>
+							<S.ModalHeader>
+								<h2>문제 삭제 확인</h2>
+								<S.ModalClose
+									onClick={d.closeDeleteModal}
+									disabled={d.isDeleting}
+								>
+									×
+								</S.ModalClose>
+							</S.ModalHeader>
+							<S.ModalBody>
+								<p>정말로 다음 문제를 삭제하시겠습니까?</p>
+								<S.BoldText>{d.problemToDelete.title}</S.BoldText>
+								<S.DeleteUsageBox>
+									{d.deletePreviewLoading && (
+										<S.DeleteUsageMuted>
+											문제집·과제·퀴즈(코딩테스트) 사용처를 확인하는 중…
+										</S.DeleteUsageMuted>
+									)}
+									{!d.deletePreviewLoading && d.deletePreviewError && (
+										<S.WarningText style={{ marginTop: 0 }}>
+											사용처를 불러오지 못했습니다. 삭제 전에 목록의
+											「사용처」로 다시 확인해 주세요.
+										</S.WarningText>
+									)}
+									{!d.deletePreviewLoading &&
+										!d.deletePreviewError &&
+										d.deletePreviewUsage && (
+											<>
+												<S.DeleteUsageMuted
+													as="div"
+													style={{
+														marginBottom: "0.75rem",
+														lineHeight: 1.55,
+														color: "#334155",
+													}}
+												>
+													아래에 나온 곳에서 이 문제를 사용 중입니다. 삭제하면{" "}
+													<strong>해당 문제집·과제·퀴즈에서 모두 빠지며</strong>,
+													이 문제에 대한 <strong>제출 기록도 함께 삭제</strong>
+													됩니다.
+												</S.DeleteUsageMuted>
+												{(d.deletePreviewUsage.problemSets ?? []).length >
+													0 && (
+													<>
+														<S.DeleteUsageSectionTitle>
+															포함된 문제집
+														</S.DeleteUsageSectionTitle>
+														<S.DeleteUsageList>
+															{(d.deletePreviewUsage.problemSets ?? []).map(
+																(ps) => (
+																	<li key={ps.problemSetId}>
+																		{ps.problemSetTitle}
+																	</li>
+																),
+															)}
+														</S.DeleteUsageList>
+													</>
+												)}
+												{(d.deletePreviewUsage.assignments ?? []).length >
+													0 && (
+													<>
+														<S.DeleteUsageSectionTitle>
+															사용 중인 과제
+														</S.DeleteUsageSectionTitle>
+														<S.DeleteUsageList>
+															{(d.deletePreviewUsage.assignments ?? []).map(
+																(a) => (
+																	<li key={a.assignmentId}>
+																		{a.assignmentTitle}
+																		{a.courseTitle
+																			? ` (${a.courseTitle})`
+																			: ""}
+																	</li>
+																),
+															)}
+														</S.DeleteUsageList>
+													</>
+												)}
+												{(d.deletePreviewUsage.quizzes ?? []).length > 0 && (
+													<>
+														<S.DeleteUsageSectionTitle>
+															사용 중인 퀴즈(코딩테스트)
+														</S.DeleteUsageSectionTitle>
+														<S.DeleteUsageList>
+															{(d.deletePreviewUsage.quizzes ?? []).map(
+																(q) => (
+																	<li key={q.quizId}>
+																		{q.quizTitle}
+																		{q.courseTitle
+																			? ` (${q.courseTitle})`
+																			: ""}
+																	</li>
+																),
+															)}
+														</S.DeleteUsageList>
+													</>
+												)}
+												{(d.deletePreviewUsage.problemSets?.length ?? 0) ===
+													0 &&
+													(d.deletePreviewUsage.assignments?.length ?? 0) ===
+														0 &&
+													(d.deletePreviewUsage.quizzes?.length ?? 0) ===
+														0 && (
+														<S.DeleteUsageMuted>
+															문제집·과제·퀴즈에서는 사용 중이 아닙니다. 삭제 시
+															문제 본문과 제출 기록만 삭제됩니다.
+														</S.DeleteUsageMuted>
+													)}
+												{((d.deletePreviewUsage.problemSets?.length ?? 0) >
+													0 ||
+													(d.deletePreviewUsage.assignments?.length ?? 0) >
+														0 ||
+													(d.deletePreviewUsage.quizzes?.length ?? 0) >
+														0) && (
+													<S.WarningText style={{ marginBottom: 0 }}>
+														⚠️ 삭제 확정 시 위 목록의 문제집·과제·퀴즈에서 이
+														문제가 <strong>자동으로 제거</strong>됩니다.
+													</S.WarningText>
+												)}
+											</>
+										)}
+								</S.DeleteUsageBox>
+								<S.WarningText>⚠️ 이 작업은 되돌릴 수 없습니다.</S.WarningText>
+							</S.ModalBody>
+							<S.ModalFooter>
+								<S.BtnCancel
+									onClick={d.closeDeleteModal}
+									disabled={d.isDeleting}
+								>
+									취소
+								</S.BtnCancel>
+								<S.BtnDanger
+									onClick={d.handleDeleteConfirm}
+									disabled={d.isDeleting || d.deletePreviewLoading}
+								>
+									{d.isDeleting ? "삭제 중..." : "삭제"}
+								</S.BtnDanger>
+							</S.ModalFooter>
+						</S.ModalContent>
+					</S.ModalOverlay>
+				)}
+
+				{/* 복사 모달 */}
+				{d.showCopyModal && d.problemToCopy && (
+					<S.ModalOverlay onClick={d.closeCopyModal}>
+						<S.ModalContent onClick={(e) => e.stopPropagation()}>
+							<S.ModalHeader>
+								<h2>문제 복사</h2>
+								<S.ModalClose onClick={d.closeCopyModal} disabled={d.isCopying}>
+									×
+								</S.ModalClose>
+							</S.ModalHeader>
+							<S.ModalBody>
+								<p>다음 문제를 복사합니다:</p>
+								<S.CopyPrompt>{d.problemToCopy.title}</S.CopyPrompt>
+								<S.FormGroup>
+									<label htmlFor="copy-title">새 문제 제목</label>
+									<S.FormInput
+										id="copy-title"
+										type="text"
+										value={d.copyTitle}
+										onChange={(e) => d.setCopyTitle(e.target.value)}
+										placeholder="문제 제목을 입력하세요"
+										disabled={d.isCopying}
+									/>
+								</S.FormGroup>
+							</S.ModalBody>
+							<S.ModalFooter>
+								<S.BtnCancel onClick={d.closeCopyModal} disabled={d.isCopying}>
+									취소
+								</S.BtnCancel>
+								<S.BtnSubmit
+									onClick={d.handleCopyConfirm}
+									disabled={d.isCopying || !d.copyTitle.trim()}
+								>
+									{d.isCopying ? "복사 중..." : "복사"}
+								</S.BtnSubmit>
+							</S.ModalFooter>
+						</S.ModalContent>
+					</S.ModalOverlay>
+				)}
+
+				{/* 사용 현황 모달 */}
+				{d.showUsageModal && d.problemForUsage && (
+					<S.ModalOverlay onClick={d.closeUsageModal}>
+						<S.ModalContent $large onClick={(e) => e.stopPropagation()}>
+							<S.ModalHeader>
+								<h2>문제 사용 현황</h2>
+								<S.ModalClose
+									onClick={d.closeUsageModal}
+									disabled={d.loadingUsage}
+								>
+									×
+								</S.ModalClose>
+							</S.ModalHeader>
+							<S.ModalBody>
+								<S.UsagePrompt>{d.problemForUsage.title}</S.UsagePrompt>
+
+								{d.loadingUsage ? (
+									<S.LoadingMessage>
+										<LoadingSpinner message="사용 현황을 불러오는 중..." />
+									</S.LoadingMessage>
+								) : !d.problemUsage.assignments?.length &&
+									!d.problemUsage.problemSets?.length &&
+									!d.problemUsage.quizzes?.length ? (
+									<S.EmptyMessage>
+										<p>이 문제는 현재 어떤 곳에서도 사용되지 않습니다.</p>
+									</S.EmptyMessage>
+								) : (
+									<div>
+										{d.problemUsage.assignments &&
+											d.problemUsage.assignments.length > 0 && (
+												<S.UsageSection>
+													<h3>과제 ({d.problemUsage.assignments.length}개)</h3>
+													<S.UsageTableWrapper>
+														<S.UsageTable>
+															<thead>
+																<tr>
+																	<th>수업</th>
+																	<th>과제</th>
+																	<th>시작일</th>
+																	<th>종료일</th>
+																</tr>
+															</thead>
+															<tbody>
+																{d.problemUsage.assignments.map((usage) => (
+																	<tr
+																		key={`assignment-${usage.assignmentId}`}
+																		onClick={() => {
+																			if (
+																				usage.sectionId &&
+																				usage.assignmentId &&
+																				d.problemForUsage?.id
+																			) {
+																				d.navigate(
+																					`/sections/${usage.sectionId}/assignments/${usage.assignmentId}/detail/problems/${d.problemForUsage.id}`,
+																				);
+																			}
+																		}}
+																	>
+																		<td>
+																			<div>
+																				<div style={{ fontWeight: "500" }}>
+																					{usage.courseTitle}
+																				</div>
+																				<div
+																					style={{
+																						fontSize: "12px",
+																						color: "#666",
+																						marginTop: "4px",
+																					}}
+																				>
+																					{usage.year}년{" "}
+																					{usage.semester === "SPRING"
+																						? "1학기"
+																						: usage.semester === "SUMMER"
+																							? "여름학기"
+																							: usage.semester === "FALL"
+																								? "2학기"
+																								: "겨울학기"}{" "}
+																					{usage.sectionNumber
+																						? `- ${usage.sectionNumber}분반`
+																						: ""}
+																				</div>
+																			</div>
+																		</td>
+																		<td>
+																			{usage.assignmentNumber && (
+																				<span
+																					style={{
+																						color: "#666",
+																						marginRight: "8px",
+																					}}
+																				>
+																					{usage.assignmentNumber}
+																				</span>
+																			)}
+																			{usage.assignmentTitle}
+																		</td>
+																		<td
+																			style={{
+																				color: "#666",
+																				fontSize: "14px",
+																			}}
+																		>
+																			{d.formatDateTime(
+																				usage.assignmentStartDate,
+																			)}
+																		</td>
+																		<td
+																			style={{
+																				color: "#666",
+																				fontSize: "14px",
+																			}}
+																		>
+																			{d.formatDateTime(
+																				usage.assignmentEndDate,
+																			)}
+																		</td>
+																	</tr>
+																))}
+															</tbody>
+														</S.UsageTable>
+													</S.UsageTableWrapper>
+												</S.UsageSection>
+											)}
+
+										{d.problemUsage.problemSets &&
+											d.problemUsage.problemSets.length > 0 && (
+												<S.UsageSection>
+													<h3>
+														문제집 ({d.problemUsage.problemSets.length}개)
+													</h3>
+													<S.UsageTableWrapper>
+														<S.UsageTable>
+															<thead>
+																<tr>
+																	<th>문제집 제목</th>
+																	<th>설명</th>
+																	<th>생성일</th>
+																</tr>
+															</thead>
+															<tbody>
+																{d.problemUsage.problemSets.map((ps) => (
+																	<tr
+																		key={`problemset-${ps.problemSetId}`}
+																		onClick={() => {
+																			d.navigate(
+																				`/tutor/problems/sets/${ps.problemSetId}/edit`,
+																			);
+																		}}
+																	>
+																		<td style={{ fontWeight: "500" }}>
+																			{ps.problemSetTitle}
+																		</td>
+																		<td
+																			style={{
+																				color: "#666",
+																				fontSize: "14px",
+																			}}
+																		>
+																			{ps.description || "-"}
+																		</td>
+																		<td
+																			style={{
+																				color: "#666",
+																				fontSize: "14px",
+																			}}
+																		>
+																			{d.formatDateTime(ps.createdAt)}
+																		</td>
+																	</tr>
+																))}
+															</tbody>
+														</S.UsageTable>
+													</S.UsageTableWrapper>
+												</S.UsageSection>
+											)}
+
+										{d.problemUsage.quizzes &&
+											d.problemUsage.quizzes.length > 0 && (
+												<S.UsageSection>
+													<h3>퀴즈 ({d.problemUsage.quizzes.length}개)</h3>
+													<S.UsageTableWrapper>
+														<S.UsageTable>
+															<thead>
+																<tr>
+																	<th>수업</th>
+																	<th>퀴즈</th>
+																	<th>시작일</th>
+																	<th>종료일</th>
+																</tr>
+															</thead>
+															<tbody>
+																{d.problemUsage.quizzes.map((quiz) => (
+																	<tr
+																		key={`quiz-${quiz.quizId}`}
+																		onClick={() => {
+																			if (quiz.sectionId && quiz.quizId) {
+																				d.navigate(
+																					`/tutor/coding-tests/section/${quiz.sectionId}/${quiz.quizId}`,
+																				);
+																			}
+																		}}
+																	>
+																		<td>
+																			<div>
+																				<div style={{ fontWeight: "500" }}>
+																					{quiz.courseTitle}
+																				</div>
+																				<div
+																					style={{
+																						fontSize: "12px",
+																						color: "#666",
+																						marginTop: "4px",
+																					}}
+																				>
+																					{quiz.year}년{" "}
+																					{quiz.semester === "SPRING"
+																						? "1학기"
+																						: quiz.semester === "SUMMER"
+																							? "여름학기"
+																							: quiz.semester === "FALL"
+																								? "2학기"
+																								: "겨울학기"}{" "}
+																					{quiz.sectionNumber
+																						? `- ${quiz.sectionNumber}분반`
+																						: ""}
+																				</div>
+																			</div>
+																		</td>
+																		<td style={{ fontWeight: "500" }}>
+																			{quiz.quizTitle}
+																		</td>
+																		<td
+																			style={{
+																				color: "#666",
+																				fontSize: "14px",
+																			}}
+																		>
+																			{d.formatDateTime(quiz.startTime)}
+																		</td>
+																		<td
+																			style={{
+																				color: "#666",
+																				fontSize: "14px",
+																			}}
+																		>
+																			{d.formatDateTime(quiz.endTime)}
+																		</td>
+																	</tr>
+																))}
+															</tbody>
+														</S.UsageTable>
+													</S.UsageTableWrapper>
+												</S.UsageSection>
+											)}
+									</div>
+								)}
+							</S.ModalBody>
+							<S.ModalFooter>
+								<S.BtnCancel
+									onClick={d.closeUsageModal}
+									disabled={d.loadingUsage}
+								>
+									닫기
+								</S.BtnCancel>
+							</S.ModalFooter>
+						</S.ModalContent>
+					</S.ModalOverlay>
+				)}
+			</S.Container>
+		</TutorLayout>
+	);
+}

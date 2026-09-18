@@ -1,0 +1,715 @@
+import { useState, useRef, useCallback } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import APIService from "../../../../../services/APIService";
+import type {
+	ProblemFormData,
+	ProblemCreateRequest,
+	TestCaseDto,
+	ParsedTestcase,
+} from "../types";
+
+const initialFormData: ProblemFormData = {
+	title: "",
+	description: "",
+	descriptionText: "",
+	inputFormat: "",
+	outputFormat: "",
+	tags: [],
+	difficulty: "1",
+	timeLimit: "",
+	memoryLimit: "",
+	sampleInputs: [{ input: "", output: "" }],
+	testcases: [],
+	strictWhitespaceGrading: false,
+};
+
+function readFileAsText(file: File): Promise<string> {
+	return new Promise((resolve, reject) => {
+		const r = new FileReader();
+		r.onload = () => resolve((r.result as string) ?? "");
+		r.onerror = reject;
+		r.readAsText(file);
+	});
+}
+
+/** File[] (.in/.out) 쌍을 TestCaseDto[]로 변환 */
+async function filesToTestCases(files: File[]): Promise<TestCaseDto[]> {
+	const byBase: Record<
+		string,
+		{ inFile?: File; outFile?: File }
+	> = {};
+	for (const f of files) {
+		const lower = f.name.toLowerCase();
+		const base = f.name.replace(/\.(in|out|ans)$/i, "");
+		if (lower.endsWith(".in")) {
+			if (!byBase[base]) byBase[base] = {};
+			byBase[base].inFile = f;
+		} else if (lower.endsWith(".out") || lower.endsWith(".ans")) {
+			if (!byBase[base]) byBase[base] = {};
+			byBase[base].outFile = f;
+		}
+	}
+	const result: TestCaseDto[] = [];
+	for (const [name, pair] of Object.entries(byBase)) {
+		if (pair.inFile && pair.outFile) {
+			const [input, output] = await Promise.all([
+				readFileAsText(pair.inFile),
+				readFileAsText(pair.outFile),
+			]);
+			result.push({
+				name,
+				input,
+				output,
+				type: "secret",
+			});
+		}
+	}
+	return result;
+}
+
+function convertMarkdownHeadingsToHtml(html: string): string {
+	if (!html) return html;
+	const lines = html.split(/\n/);
+	const convertedLines = lines.map((line) => {
+		if (line.match(/<[^>]+>/)) return line;
+		const trimmedLine = line.trim();
+		const headingMatch = trimmedLine.match(/^(#{1,6})\s*(.+)$/);
+		if (headingMatch) {
+			const hashCount = headingMatch[1].length;
+			const titleText = headingMatch[2].trim();
+			const headingLevel = Math.min(Math.max(hashCount, 1), 6);
+			return `<h${headingLevel}>${titleText}</h${headingLevel}>`;
+		}
+		return line;
+	});
+	return convertedLines.join("\n");
+}
+
+/** 과제 관리에서 "새 문제 만들기"로 진입했을 때 location.state 타입 */
+interface FromAssignmentState {
+	fromAssignmentId?: number;
+	sectionId?: string;
+}
+
+export function useProblemCreate() {
+	const navigate = useNavigate();
+	const location = useLocation();
+	const locationState = location.state as FromAssignmentState | null;
+	const descriptionRef = useRef<HTMLDivElement>(null);
+
+	const [zipFile, setZipFile] = useState<File | null>(null);
+	const [folderFormatFolderName, setFolderFormatFolderName] = useState<string | null>(null);
+	/** "descriptionOnly" = 문제 설명만, "full" = 전체(입력/출력/예제 포함) */
+	const [previewMode, setPreviewMode] = useState<"descriptionOnly" | "full">("full");
+	const [loading, setLoading] = useState(false);
+	const [error, setError] = useState<string | null>(null);
+	const [parsedTestCases, setParsedTestCases] = useState<ParsedTestcase[]>([]);
+	const [manualTestCases, setManualTestCases] = useState<ParsedTestcase[]>([]);
+	const [showParsedTestCases, setShowParsedTestCases] = useState(false);
+	const [formData, setFormData] = useState<ProblemFormData>(initialFormData);
+	const [currentTag, setCurrentTag] = useState("");
+	const [fieldErrors, setFieldErrors] = useState<Record<string, boolean>>({});
+
+	const handleZipFileChange = useCallback(
+		async (e: React.ChangeEvent<HTMLInputElement>) => {
+			const file = e.target.files?.[0];
+			if (!file) return;
+			if (!file.name.endsWith(".zip")) {
+				setError("ZIP 파일만 업로드 가능합니다.");
+				return;
+			}
+			setFolderFormatFolderName(null);
+			setZipFile(file);
+			setError(null);
+			setLoading(true);
+			try {
+				const fd = new FormData();
+				fd.append("zipFile", file);
+				const parsedData = await APIService.parseZipFile(fd);
+				if (parsedData) {
+					if (parsedData.title) {
+						setFormData((prev) => ({ ...prev, title: parsedData.title }));
+					}
+					if (
+						parsedData.timeLimit != null &&
+						parsedData.timeLimit !== undefined
+					) {
+						setFormData((prev) => ({
+							...prev,
+							timeLimit: String(parsedData.timeLimit),
+						}));
+					}
+					if (
+						parsedData.memoryLimit != null &&
+						parsedData.memoryLimit !== undefined
+					) {
+						setFormData((prev) => ({
+							...prev,
+							memoryLimit: String(parsedData.memoryLimit),
+						}));
+					}
+					if (parsedData.description) {
+						const processedDescription = convertMarkdownHeadingsToHtml(
+							parsedData.description,
+						);
+						const hasHtmlTags = /<[a-z][\s\S]*>/i.test(processedDescription);
+						let htmlDescription: string;
+						if (hasHtmlTags) {
+							htmlDescription = processedDescription;
+						} else {
+							htmlDescription = processedDescription
+								.replace(/\n/g, "<br>")
+								.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+								.replace(/\*(.*?)\*/g, "<em>$1</em>");
+						}
+						setFormData((prev) => ({
+							...prev,
+							description: htmlDescription,
+							descriptionText: parsedData.description,
+						}));
+						if (descriptionRef.current) {
+							descriptionRef.current.innerHTML = htmlDescription;
+						}
+					}
+					const testCases = parsedData.testCases ?? parsedData.testcases ?? [];
+					if (testCases.length > 0) {
+						const sampleTestCases = testCases.filter(
+							(tc: ParsedTestcase) => tc.type === "sample",
+						);
+						if (sampleTestCases.length > 0) {
+							setFormData((prev) => ({
+								...prev,
+								sampleInputs: sampleTestCases.map((tc: ParsedTestcase) => ({
+									input: tc.input ?? "",
+									output: tc.output ?? "",
+								})),
+							}));
+						}
+						setParsedTestCases(testCases);
+					} else {
+						setParsedTestCases([]);
+					}
+				}
+			} catch (err) {
+				const message = err instanceof Error ? err.message : "알 수 없는 오류";
+				setError(`ZIP 파일 파싱 중 오류가 발생했습니다: ${message}`);
+			} finally {
+				setLoading(false);
+			}
+		},
+		[],
+	);
+
+	const handleFolderFormatFolderChange = useCallback(
+		async (e: React.ChangeEvent<HTMLInputElement>) => {
+			const fileList = e.target.files;
+			if (!fileList || fileList.length === 0) return;
+			const files = Array.from(fileList);
+			setZipFile(null);
+			const firstPath = (files[0] as File & { webkitRelativePath?: string }).webkitRelativePath || files[0].name;
+			const folderName = firstPath.includes("/") ? firstPath.split("/")[0] : firstPath;
+			setFolderFormatFolderName(folderName);
+			setError(null);
+			setLoading(true);
+			try {
+				const fd = new FormData();
+				for (const file of files) {
+					const path = (file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name;
+					fd.append("files", file, path);
+				}
+				const parsedData = await APIService.parseFolderFormatFiles(fd);
+				if (parsedData) {
+					if (parsedData.title) {
+						setFormData((prev) => ({ ...prev, title: parsedData.title }));
+					}
+					if (
+						parsedData.timeLimit != null &&
+						parsedData.timeLimit !== undefined
+					) {
+						setFormData((prev) => ({
+							...prev,
+							timeLimit: String(parsedData.timeLimit),
+						}));
+					}
+					if (
+						parsedData.memoryLimit != null &&
+						parsedData.memoryLimit !== undefined
+					) {
+						setFormData((prev) => ({
+							...prev,
+							memoryLimit: String(parsedData.memoryLimit),
+						}));
+					}
+					if (parsedData.description) {
+						const processedDescription = convertMarkdownHeadingsToHtml(
+							parsedData.description,
+						);
+						const hasHtmlTags = /<[a-z][\s\S]*>/i.test(processedDescription);
+						let htmlDescription: string;
+						if (hasHtmlTags) {
+							htmlDescription = processedDescription;
+						} else {
+							htmlDescription = processedDescription
+								.replace(/\n/g, "<br>")
+								.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+								.replace(/\*(.*?)\*/g, "<em>$1</em>");
+						}
+						setFormData((prev) => ({
+							...prev,
+							description: htmlDescription,
+							descriptionText: parsedData.description,
+						}));
+						if (descriptionRef.current) {
+							descriptionRef.current.innerHTML = htmlDescription;
+						}
+					}
+					const testCases = parsedData.testCases ?? parsedData.testcases ?? [];
+					if (testCases.length > 0) {
+						const sampleTestCases = testCases.filter(
+							(tc: ParsedTestcase) => tc.type === "sample",
+						);
+						if (sampleTestCases.length > 0) {
+							setFormData((prev) => ({
+								...prev,
+								sampleInputs: sampleTestCases.map((tc: ParsedTestcase) => ({
+									input: tc.input ?? "",
+									output: tc.output ?? "",
+								})),
+							}));
+						}
+						setParsedTestCases(testCases);
+					} else {
+						setParsedTestCases([]);
+					}
+				}
+			} catch (err) {
+				const message = err instanceof Error ? err.message : "알 수 없는 오류";
+				setError(`폴더 형식 파싱 중 오류가 발생했습니다: ${message}`);
+			} finally {
+				setLoading(false);
+			}
+		},
+		[],
+	);
+
+	const handleInputChange = useCallback(
+		(
+			e: React.ChangeEvent<
+				HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+			>,
+		) => {
+			const { name, value } = e.target;
+			setFormData((prev) => ({ ...prev, [name]: value }));
+		},
+		[],
+	);
+
+	const handleTagAdd = useCallback(() => {
+		const tag = currentTag.trim();
+		if (tag && !formData.tags.includes(tag)) {
+			setFormData((prev) => ({
+				...prev,
+				tags: [...prev.tags, tag],
+			}));
+			setCurrentTag("");
+		}
+	}, [currentTag, formData.tags]);
+
+	const handleTagKeyPress = useCallback(
+		(e: React.KeyboardEvent) => {
+			if (e.key === "Enter") {
+				e.preventDefault();
+				handleTagAdd();
+			}
+		},
+		[handleTagAdd],
+	);
+
+	const handleTagRemove = useCallback((tagToRemove: string) => {
+		setFormData((prev) => ({
+			...prev,
+			tags: prev.tags.filter((tag) => tag !== tagToRemove),
+		}));
+	}, []);
+
+	const handleSampleInputChange = useCallback(
+		(index: number, field: "input" | "output", value: string) => {
+			const newSamples = [...formData.sampleInputs];
+			newSamples[index] = { ...newSamples[index], [field]: value };
+			setFormData((prev) => ({ ...prev, sampleInputs: newSamples }));
+		},
+		[formData.sampleInputs],
+	);
+
+	const addSampleInput = useCallback(() => {
+		setFormData((prev) => ({
+			...prev,
+			sampleInputs: [...prev.sampleInputs, { input: "", output: "" }],
+		}));
+	}, []);
+
+	const removeSampleInput = useCallback((index: number) => {
+		setFormData((prev) => {
+			if (prev.sampleInputs.length <= 1) return prev;
+			return {
+				...prev,
+				sampleInputs: prev.sampleInputs.filter((_, i) => i !== index),
+			};
+		});
+	}, []);
+
+	const handleTestcaseAdd = useCallback(
+		(e: React.ChangeEvent<HTMLInputElement>) => {
+			const files = e.target.files ? Array.from(e.target.files) : [];
+			setFormData((prev) => ({
+				...prev,
+				testcases: [...prev.testcases, ...files],
+			}));
+			setFieldErrors((prev) => ({ ...prev, testcases: false }));
+		},
+		[],
+	);
+
+	const handleTestcaseRemove = useCallback((index: number) => {
+		setFormData((prev) => ({
+			...prev,
+			testcases: prev.testcases.filter((_, i) => i !== index),
+		}));
+	}, []);
+
+	const handleParsedTestcaseRemove = useCallback((index: number) => {
+		setParsedTestCases((prev) => prev.filter((_, i) => i !== index));
+		setFieldErrors((prev) => ({ ...prev, testcases: false }));
+	}, []);
+
+	const handleManualTestcaseAdd = useCallback(() => {
+		setManualTestCases((prev) => [
+			...prev,
+			{ name: `테스트케이스 ${prev.length + 1}`, input: "", output: "", type: "secret" },
+		]);
+		setFieldErrors((prev) => ({ ...prev, testcases: false }));
+	}, []);
+
+	const handleManualTestcaseRemove = useCallback((index: number) => {
+		setManualTestCases((prev) => prev.filter((_, i) => i !== index));
+		setFieldErrors((prev) => ({ ...prev, testcases: false }));
+	}, []);
+
+	const handleManualTestcaseChange = useCallback(
+		(index: number, field: keyof ParsedTestcase, value: string) => {
+			setManualTestCases((prev) => {
+				const next = [...prev];
+				if (next[index]) next[index] = { ...next[index], [field]: value };
+				return next;
+			});
+		},
+		[],
+	);
+
+	/** 커서 위치에 텍스트를 삽입하고 description 상태를 동기화합니다. */
+	const insertMarkdownText = useCallback((text: string) => {
+		const el = descriptionRef.current;
+		if (!el) return;
+		el.focus();
+		document.execCommand("insertText", false, text);
+		const plain = el.innerText || el.textContent || "";
+		setFormData((prev) => ({ ...prev, description: plain, descriptionText: plain }));
+	}, []);
+
+	/**
+	 * 선택된 텍스트를 마크다운 인라인 문법으로 감쌉니다.
+	 * 선택 없으면 문법 기호만 삽입합니다.
+	 */
+	const wrapWithMarkdown = useCallback((syntax: string) => {
+		const el = descriptionRef.current;
+		if (!el) return;
+		el.focus();
+		const selection = window.getSelection();
+		if (selection && !selection.isCollapsed && selection.rangeCount > 0) {
+			const selectedText = selection.getRangeAt(0).toString();
+			document.execCommand("insertText", false, `${syntax}${selectedText}${syntax}`);
+		} else {
+			document.execCommand("insertText", false, `${syntax}${syntax}`);
+		}
+		const plain = el.innerText || el.textContent || "";
+		setFormData((prev) => ({ ...prev, description: plain, descriptionText: plain }));
+	}, []);
+
+	/**
+	 * 현재 줄 앞에 마크다운 제목 문법(#, ## 등)을 삽입합니다.
+	 * HeadingSelect의 value("h1"~"h6" | "p")를 받습니다.
+	 */
+	const insertMarkdownHeading = useCallback((headingValue: string) => {
+		const el = descriptionRef.current;
+		if (!el) return;
+		el.focus();
+		const levelMap: Record<string, string> = {
+			h1: "# ", h2: "## ", h3: "### ", h4: "#### ", h5: "##### ", h6: "###### ", p: "",
+		};
+		const prefix = levelMap[headingValue] ?? "";
+		if (prefix) {
+			document.execCommand("insertText", false, prefix);
+		}
+		const plain = el.innerText || el.textContent || "";
+		setFormData((prev) => ({ ...prev, description: plain, descriptionText: plain }));
+	}, []);
+
+	const getFullDescription = useCallback(
+		() => ({
+			title: formData.title,
+			description: formData.description || "",
+			inputFormat: formData.inputFormat,
+			outputFormat: formData.outputFormat,
+			sampleInputs: formData.sampleInputs,
+		}),
+		[formData],
+	);
+
+	/** 전체 미리보기용: 본문(mainOnly) + 입력/출력/예제 (중복 방지 위해 mainOnly 사용) */
+	const getFullDescriptionForPreview = useCallback(() => {
+		const desc = formData.description || formData.descriptionText || "";
+		const normalized = desc.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+		const match = normalized.match(/(\n|^)\s*##\s*입력\s*형식\s*[\n\r]/);
+		const mainOnly =
+			match && match.index != null ? normalized.slice(0, match.index).trim() : desc;
+		return {
+			title: formData.title,
+			description: mainOnly,
+			inputFormat: formData.inputFormat,
+			outputFormat: formData.outputFormat,
+			sampleInputs: formData.sampleInputs,
+		};
+	}, [formData]);
+
+	/** 미리보기용: 입력/출력/예제는 폼에서만 보이게, 미리보기에는 문제 설명만 표시 */
+	const getDescriptionOnlyForPreview = useCallback(
+		() => {
+			const desc =
+				formData.description || formData.descriptionText || "";
+			const normalized = desc.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+			// 줄 맨 앞이든 중간이든 "## 입력 형식" 이하는 잘라서 본문만
+			const match = normalized.match(/(\n|^)\s*##\s*입력\s*형식\s*[\n\r]/);
+			const mainOnly =
+				match && match.index != null
+					? normalized.slice(0, match.index).trim()
+					: desc;
+			return {
+				title: formData.title,
+				description: mainOnly,
+				inputFormat: "",
+				outputFormat: "",
+				sampleInputs: [],
+			};
+		},
+		[formData],
+	);
+
+	const getFullDescriptionForBackend = useCallback((): string => {
+		// 본문만 사용(이미 "## 입력 형식" 이하가 있으면 제거 후 한 번만 붙임 → 저장 시 중복 방지)
+		const raw = (formData.descriptionText || "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+		const mainMatch = raw.match(/(\n|^)\s*##\s*입력\s*형식\s*[\n\r]/);
+		const mainOnly = mainMatch && mainMatch.index != null ? raw.slice(0, mainMatch.index).trim() : raw;
+		let full = mainOnly;
+		if (formData.inputFormat) {
+			full += "\n\n## 입력 형식\n" + formData.inputFormat;
+		}
+		if (formData.outputFormat) {
+			full += "\n\n## 출력 형식\n" + formData.outputFormat;
+		}
+		// 예제는 내용이 있을 때만 추가합니다 (빈 값이면 "## 예제" 섹션 자체를 생략)
+		if (formData.sampleInputs.some((s) => s.input || s.output)) {
+			full += "\n\n## 예제";
+			formData.sampleInputs.forEach((sample, idx) => {
+				if (sample.input || sample.output) {
+					full += `\n\n### 예제 입력 ${idx + 1}\n\`\`\`\n${sample.input}\n\`\`\``;
+					full += `\n\n### 예제 출력 ${idx + 1}\n\`\`\`\n${sample.output}\n\`\`\``;
+				}
+			});
+		}
+		return full;
+	}, [formData]);
+
+	const clearFieldError = useCallback((name: string) => {
+		setFieldErrors((prev) => ({ ...prev, [name]: false }));
+	}, []);
+
+	const handleSubmit = useCallback(
+		async (e: React.FormEvent) => {
+			e.preventDefault();
+			setLoading(true);
+			setError(null);
+
+			const errs: Record<string, boolean> = {};
+			if (!formData.title?.trim()) errs.title = true;
+			if (!formData.timeLimit?.trim()) errs.timeLimit = true;
+			if (!formData.memoryLimit?.trim()) errs.memoryLimit = true;
+			const hasDescription =
+				(formData.description?.trim() || formData.descriptionText?.trim()) ?? "";
+			if (!hasDescription) errs.description = true;
+			const hasTestcases =
+				parsedTestCases.some(
+					(tc) => (tc.input?.trim() && tc.output?.trim()),
+				) ||
+				formData.testcases.length > 0 ||
+				manualTestCases.some(
+					(tc) => (tc.input?.trim() && tc.output?.trim()),
+				);
+			if (!hasTestcases) errs.testcases = true;
+
+			setFieldErrors(errs);
+			if (Object.keys(errs).length > 0) {
+				setLoading(false);
+				const messages: string[] = [];
+				if (errs.title) messages.push("• 문제 제목");
+				if (errs.timeLimit) messages.push("• 시간 제한");
+				if (errs.memoryLimit) messages.push("• 메모리 제한");
+				if (errs.description) messages.push("• 문제 설명");
+				if (errs.testcases) messages.push("• 테스트케이스 (최소 1개 이상)");
+				alert("다음 항목을 입력해 주세요:\n\n" + messages.join("\n"));
+				return;
+			}
+
+			try {
+				const testcasesFromParsed: TestCaseDto[] = parsedTestCases
+					.filter((tc) => tc.input?.trim() && tc.output?.trim())
+					.map((tc, idx) => ({
+						name: tc.name ?? `testcase_${idx}`,
+						input: tc.input ?? "",
+						output: tc.output ?? "",
+						type: (tc.type === "sample" ? "sample" : "secret") as "sample" | "secret",
+					}));
+
+				const testcasesFromFiles = await filesToTestCases(formData.testcases);
+				const testcasesFromManual: TestCaseDto[] = manualTestCases
+					.filter((tc) => tc.input?.trim() && tc.output?.trim())
+					.map((tc, idx) => ({
+						name: tc.name ?? `testcase_manual_${idx}`,
+						input: tc.input ?? "",
+						output: tc.output ?? "",
+						type: (tc.type === "sample" ? "sample" : "secret") as "sample" | "secret",
+					}));
+				const testcases: TestCaseDto[] = [
+					...testcasesFromParsed,
+					...testcasesFromFiles,
+					...testcasesFromManual,
+				];
+
+				const request: ProblemCreateRequest = {
+					title: formData.title,
+					description: getFullDescriptionForBackend(),
+					inputFormat: formData.inputFormat || undefined,
+					outputFormat: formData.outputFormat || undefined,
+					tags: JSON.stringify(formData.tags),
+					difficulty: formData.difficulty?.trim() || "1",
+					timeLimit: formData.timeLimit || "0",
+					memoryLimit: formData.memoryLimit || "0",
+					sampleInputs: JSON.stringify(formData.sampleInputs),
+					testcases,
+					strictWhitespaceGrading: Boolean(formData.strictWhitespaceGrading),
+				};
+
+				const createResult = await APIService.createProblem(request);
+				const newProblemId = createResult;
+
+				const fromAssignmentId = locationState?.fromAssignmentId;
+				const sectionId = locationState?.sectionId;
+
+				if (
+					fromAssignmentId != null &&
+					sectionId &&
+					newProblemId != null &&
+					!Number.isNaN(Number(newProblemId))
+				) {
+					await APIService.addProblemToAssignment(
+						fromAssignmentId,
+						Number(newProblemId),
+					);
+					alert(
+						"문제가 생성되어 해당 과제에 추가되었습니다. 과제 관리 페이지로 이동합니다.",
+					);
+					navigate(`/tutor/assignments/section/${sectionId}`, {
+						replace: true,
+					});
+				} else {
+					alert("문제가 성공적으로 생성되었습니다.");
+					navigate("/tutor/problems");
+				}
+			} catch (err) {
+				console.error("문제 생성 실패:", err);
+				setError("문제 생성 중 오류가 발생했습니다.");
+			} finally {
+				setLoading(false);
+			}
+		},
+		[
+			formData,
+			parsedTestCases,
+			manualTestCases,
+			getFullDescriptionForBackend,
+			navigate,
+			locationState,
+		],
+	);
+
+	const clearZipFile = useCallback(() => {
+		setZipFile(null);
+		setParsedTestCases([]);
+		const el = document.getElementById("zipFileInput") as HTMLInputElement;
+		if (el) el.value = "";
+	}, []);
+
+	const clearFolderFormatZip = useCallback(() => {
+		setFolderFormatFolderName(null);
+		setParsedTestCases([]);
+		const dirEl = document.getElementById("folderFormatDirInput") as HTMLInputElement;
+		if (dirEl) dirEl.value = "";
+	}, []);
+
+	return {
+		navigate,
+		descriptionRef,
+		zipFile,
+		setZipFile,
+		loading,
+		error,
+		parsedTestCases,
+		showParsedTestCases,
+		setShowParsedTestCases,
+		formData,
+		setFormData,
+		currentTag,
+		setCurrentTag,
+		handleZipFileChange,
+		handleFolderFormatFolderChange,
+		folderFormatFolderName,
+		handleInputChange,
+		handleTagAdd,
+		handleTagKeyPress,
+		handleTagRemove,
+		handleSampleInputChange,
+		addSampleInput,
+		removeSampleInput,
+		handleTestcaseAdd,
+		handleTestcaseRemove,
+		handleParsedTestcaseRemove,
+		manualTestCases,
+		handleManualTestcaseAdd,
+		handleManualTestcaseRemove,
+		handleManualTestcaseChange,
+		insertMarkdownText,
+		wrapWithMarkdown,
+		insertMarkdownHeading,
+		getFullDescription,
+		getFullDescriptionForPreview,
+		getDescriptionOnlyForPreview,
+		previewMode,
+		setPreviewMode,
+		handleSubmit,
+		clearZipFile,
+		clearFolderFormatZip,
+		fieldErrors,
+		clearFieldError,
+	};
+}
+
+export type ProblemCreateHookReturn = ReturnType<typeof useProblemCreate>;
