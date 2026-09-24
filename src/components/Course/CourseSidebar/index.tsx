@@ -11,6 +11,7 @@ import {
 	MdForum,
 	MdQuiz,
 	MdSettings,
+	MdCode,
 } from "react-icons/md";
 import { FaGripLinesVertical, FaChevronRight, FaBars } from "react-icons/fa";
 import APIService from "../../../services/APIService";
@@ -114,6 +115,12 @@ const CourseSidebar: React.FC<CourseSidebarProps> = ({
 						label: "코딩 테스트",
 						path: `/sections/${sectionId}/coding-quiz`,
 						icon: MdQuiz,
+					},
+					{
+						id: "coding-practice",
+						label: "코딩 실습",
+						path: `/sections/${sectionId}/coding-practice`,
+						icon: MdCode,
 					},
 					{
 						id: "notice",

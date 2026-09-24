@@ -27,6 +27,7 @@ import QuestionDetailPage from "./pages/Course/Community/QuestionDetailPage";
 import QuestionEditPage from "./pages/Course/Community/QuestionEditPage";
 import CodingQuizPage from "./pages/Course/CodingQuiz/CodingQuizPage";
 import CodingQuizSolvePage from "./pages/Course/CodingQuiz/CodingQuizSolvePage";
+import CodingPracticePage from "./pages/Course/CodingPractice/CodingPracticePage";
 
 // 과제
 
@@ -124,6 +125,10 @@ const App: React.FC = () => {
 					<Route
 						path="/sections/:sectionId/coding-quiz/:quizId"
 						element={<CodingQuizSolvePage />}
+					/>
+					<Route
+						path="/sections/:sectionId/coding-practice"
+						element={<CodingPracticePage />}
 					/>
 					<Route
 						path="/sections/:sectionId/alarm"
