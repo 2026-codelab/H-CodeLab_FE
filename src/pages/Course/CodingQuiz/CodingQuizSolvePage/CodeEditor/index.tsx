@@ -116,6 +116,7 @@ interface CodeEditorProps {
 	assignmentInfo: any;
 	isSubmitting: boolean;
 	onCodeChange: (value: string) => void;
+	onLanguageChange?: (language: string) => void;
 	onSubmit: () => void;
 	onSubmitWithOutput: () => void;
 	sessionSaveStatus?: "idle" | "saving" | "saved" | "error";
@@ -139,6 +140,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
 	assignmentInfo,
 	isSubmitting,
 	onCodeChange,
+	onLanguageChange,
 	onSubmit,
 	onSubmitWithOutput,
 	sessionSaveStatus = "idle",
@@ -486,6 +488,26 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
 					</S.SessionSaveStatus>
 				</S.EditorHeaderLeft>
 				<S.EditorHeaderRight>
+					{onLanguageChange && (
+						<select
+							value={language}
+							onChange={(e) => onLanguageChange(e.target.value)}
+							disabled={isActionLocked}
+							style={{
+								padding: "6px 10px",
+								borderRadius: 6,
+								border: "1px solid #30363d",
+								background: theme === "dark" ? "#0d1117" : "#ffffff",
+								color: theme === "dark" ? "#eff5f2" : "#24292e",
+								fontSize: 13,
+							}}
+						>
+							<option value="c">C</option>
+							<option value="cpp">C++</option>
+							<option value="java">Java</option>
+							<option value="python">Python</option>
+						</select>
+					)}
 					{(assignmentInfo.dueDate || assignmentInfo.endDate) && (
 						<S.DueDateInfo>
 							<S.DueDateIcon>⏰</S.DueDateIcon>

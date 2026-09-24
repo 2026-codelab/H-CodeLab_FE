@@ -27,6 +27,7 @@ interface ProblemSolveViewProps {
 	currentProblem: Problem;
 	problemDescription: string;
 	language: string;
+	handleLanguageChange: (language: string) => void;
 	theme: "light" | "dark";
 	setTheme: (t: "light" | "dark") => void;
 	code: string;
@@ -88,6 +89,7 @@ const ProblemSolveView: React.FC<ProblemSolveViewProps> = (props) => {
 		currentProblem,
 		problemDescription,
 		language,
+		handleLanguageChange,
 		theme,
 		setTheme,
 		code,
@@ -148,6 +150,7 @@ const ProblemSolveView: React.FC<ProblemSolveViewProps> = (props) => {
 				assignmentInfo={assignmentInfo}
 				isSubmitting={isSubmitting}
 				onCodeChange={setCode}
+				onLanguageChange={handleLanguageChange}
 				onSubmit={handleSubmit}
 				onSubmitWithOutput={handleSubmitWithOutput}
 				sessionSaveStatus={sessionSaveStatus}

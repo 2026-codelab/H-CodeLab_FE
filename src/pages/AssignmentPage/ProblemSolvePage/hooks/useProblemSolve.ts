@@ -35,9 +35,28 @@ export function useProblemSolve() {
 		sectionId: string;
 	}>();
 
-	const [language] = useState("c");
+	const [language, setLanguage] = useState("c");
 	const [theme, setTheme] = useState<"light" | "dark">("light");
 	const [code, setCode] = useState(() => getDefaultCode("c"));
+
+	/**
+	 * 언어를 바꿀 때, 학생이 아직 기본 템플릿에서 손을 안 댔으면(코드 == 이전 언어 기본 템플릿)
+	 * 새 언어의 기본 템플릿으로 바꿔준다. 이미 직접 작성한 코드가 있으면 실수로 날리지 않도록
+	 * 언어 표시만 바꾸고 코드는 그대로 둔다(문법 강조/제출 언어만 변경됨).
+	 */
+	const handleLanguageChange = useCallback(
+		(nextLanguage: string) => {
+			setLanguage((prevLanguage) => {
+				setCode((prevCode) =>
+					prevCode === getDefaultCode(prevLanguage)
+						? getDefaultCode(nextLanguage)
+						: prevCode,
+				);
+				return nextLanguage;
+			});
+		},
+		[],
+	);
 	const [submissionResult, setSubmissionResult] =
 		useState<SubmissionResultState | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
@@ -1033,6 +1052,7 @@ export function useProblemSolve() {
 		currentProblem,
 		problemDescription,
 		language,
+		handleLanguageChange,
 		theme,
 		setTheme,
 		code,

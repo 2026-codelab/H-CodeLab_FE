@@ -41,6 +41,7 @@ export default function CodingQuizSolveView(d: UseCodingQuizSolveReturn) {
 				assignmentInfo={d.quizInfo}
 				isSubmitting={d.isSubmitting || d.isSubmitBlocked}
 				onCodeChange={d.setCode}
+				onLanguageChange={d.handleLanguageChange}
 				onSubmit={d.handleSubmit}
 				onSubmitWithOutput={d.handleSubmitWithOutput}
 				sessionSaveStatus={d.sessionSaveStatus}

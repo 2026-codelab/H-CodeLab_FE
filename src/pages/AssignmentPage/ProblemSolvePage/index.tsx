@@ -29,6 +29,7 @@ const ProblemSolvePage: React.FC = () => {
 			currentProblem={hook.currentProblem}
 			problemDescription={hook.problemDescription}
 			language={hook.language}
+			handleLanguageChange={hook.handleLanguageChange}
 			theme={hook.theme}
 			setTheme={hook.setTheme}
 			code={hook.code}
