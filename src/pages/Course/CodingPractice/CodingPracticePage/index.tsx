@@ -11,6 +11,8 @@ import { fetchEventSource } from "@microsoft/fetch-event-source";
 import DraggablePanel from "../../CodingQuiz/CodingQuizSolvePage/DraggablePanel";
 import * as ES from "../../CodingQuiz/CodingQuizSolvePage/CodeEditor/styles";
 import * as RS from "../../CodingQuiz/CodingQuizSolvePage/ExecutionResult/styles";
+import * as DS from "../../CodingQuiz/CodingQuizSolvePage/ProblemDescription/styles";
+import * as PS from "../../../AssignmentPage/ProblemSolvePage/styles";
 import apiService from "../../../../services/APIService";
 import tokenManager from "../../../../utils/tokenManager";
 import * as S from "./styles";
@@ -18,6 +20,7 @@ import * as S from "./styles";
 type Language = "c" | "cpp" | "java" | "python";
 type PanelKey = "editor" | "stdin" | "output";
 type PanelLayout = { left: PanelKey; topRight: PanelKey; bottomRight: PanelKey };
+type Theme = "light" | "dark";
 
 const DEFAULT_CODE: Record<Language, string> = {
 	c: '#include <stdio.h>\n\nint main() {\n    printf("Hello, world!\\n");\n    return 0;\n}\n',
@@ -49,6 +52,7 @@ function getLanguageExtension(language: Language) {
 export default function CodingPracticePage() {
 	const { sectionId } = useParams<{ sectionId: string }>();
 	const navigate = useNavigate();
+	const [theme, setTheme] = useState<Theme>("light");
 	const [language, setLanguage] = useState<Language>("c");
 	const [code, setCode] = useState(DEFAULT_CODE.c);
 	const [stdin, setStdin] = useState("");
@@ -70,24 +74,17 @@ export default function CodingPracticePage() {
 				if (current[pos] === targetId) targetPos = pos;
 			});
 			if (draggedPos && targetPos) {
-				return {
-					...current,
-					[draggedPos]: targetId as PanelKey,
-					[targetPos]: draggedId as PanelKey,
-				};
+				return { ...current, [draggedPos]: targetId as PanelKey, [targetPos]: draggedId as PanelKey };
 			}
 			return current;
 		});
 	}, []);
 
-	const handleLanguageChange = useCallback(
-		(e: React.ChangeEvent<HTMLSelectElement>) => {
-			const next = e.target.value as Language;
-			setLanguage(next);
-			setCode(DEFAULT_CODE[next]);
-		},
-		[],
-	);
+	const handleLanguageChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+		const next = e.target.value as Language;
+		setLanguage(next);
+		setCode(DEFAULT_CODE[next]);
+	}, []);
 
 	const handleRun = useCallback(async () => {
 		if (!sectionId || runState.status === "running") return;
@@ -115,20 +112,14 @@ export default function CodingPracticePage() {
 				`${baseURL}/run/stream/${sessionKey}?domjudgeProblemId=${encodeURIComponent(domjudgeProblemId)}`,
 				{
 					method: "GET",
-					headers: {
-						...(token ? { Authorization: `Bearer ${token}` } : {}),
-					},
+					headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
 					signal: abortController.signal,
 					openWhenHidden: true,
 					onmessage(event) {
 						if (abortController.signal.aborted) return;
 						const data = JSON.parse(event.data);
 						if (event.event === "output") {
-							setRunState({
-								status: "output",
-								output: data.output ?? "",
-								outputError: data.outputError ?? "",
-							});
+							setRunState({ status: "output", output: data.output ?? "", outputError: data.outputError ?? "" });
 							abortController.abort();
 						} else if (event.event === "ce") {
 							setRunState({ status: "ce", outputCompile: data.output_compile ?? "" });
@@ -151,10 +142,7 @@ export default function CodingPracticePage() {
 			setRunState((prev) =>
 				prev.status === "output" || prev.status === "ce"
 					? prev
-					: {
-							status: "error",
-							message: err instanceof Error ? err.message : "실행 요청에 실패했습니다.",
-						},
+					: { status: "error", message: err instanceof Error ? err.message : "실행 요청에 실패했습니다." },
 			);
 		}
 	}, [sectionId, code, language, stdin, runState.status]);
@@ -168,23 +156,12 @@ export default function CodingPracticePage() {
 					</span>
 				</ES.EditorHeaderLeft>
 				<ES.EditorHeaderRight>
-					<select
-						value={language}
-						onChange={handleLanguageChange}
-						style={{
-							padding: "6px 10px",
-							borderRadius: 4,
-							border: "1px solid #30363d",
-							background: "#0d1117",
-							color: "#eff5f2",
-							fontSize: 13,
-						}}
-					>
+					<S.LanguageSelect value={language} onChange={handleLanguageChange}>
 						<option value="c">C</option>
 						<option value="cpp">C++</option>
 						<option value="java">Java</option>
 						<option value="python">Python</option>
-					</select>
+					</S.LanguageSelect>
 					<ES.SubmitButton
 						onClick={handleRun}
 						disabled={runState.status === "running"}
@@ -199,7 +176,7 @@ export default function CodingPracticePage() {
 					value={code}
 					height="100%"
 					extensions={getLanguageExtension(language)}
-					theme="dark"
+					theme={theme}
 					onChange={setCode}
 				/>
 			</ES.EditorScrollArea>
@@ -207,13 +184,16 @@ export default function CodingPracticePage() {
 	);
 
 	const stdinPanel = (
-		<S.OutputWrapper style={{ height: "100%" }}>
-			<S.StdinTextarea
-				value={stdin}
-				onChange={(e) => setStdin(e.target.value)}
-				placeholder="프로그램이 scanf/input()으로 읽을 값을 입력하세요 (선택)"
-			/>
-		</S.OutputWrapper>
+		<DS.DescriptionArea>
+			<DS.DescriptionHeader>입력값 (STDIN)</DS.DescriptionHeader>
+			<div style={{ height: "calc(100% - 64px)" }}>
+				<S.StdinTextarea
+					value={stdin}
+					onChange={(e) => setStdin(e.target.value)}
+					placeholder="프로그램이 scanf/input()으로 읽을 값을 입력하세요 (선택)"
+				/>
+			</div>
+		</DS.DescriptionArea>
 	);
 
 	const outputPanel = (
@@ -247,74 +227,66 @@ export default function CodingPracticePage() {
 						</RS.Content>
 					</>
 				)}
-				{runState.status === "error" && (
-					<RS.ErrorMessage>{runState.message}</RS.ErrorMessage>
-				)}
+				{runState.status === "error" && <RS.ErrorMessage>{runState.message}</RS.ErrorMessage>}
 			</S.OutputWrapper>
 		</RS.ResultArea>
 	);
 
-	const panels: Record<PanelKey, React.ReactNode> = {
-		editor: editorPanel,
-		stdin: stdinPanel,
-		output: outputPanel,
-	};
-	const titles: Record<PanelKey, string> = {
-		editor: "코드 에디터",
-		stdin: "입력값 (STDIN)",
-		output: "실행 결과",
-	};
+	const panels: Record<PanelKey, React.ReactNode> = { editor: editorPanel, stdin: stdinPanel, output: outputPanel };
+	const titles: Record<PanelKey, string> = { editor: "코드 에디터", stdin: "입력값", output: "실행 결과" };
 
 	const renderPanel = (panelType: PanelKey) => (
-		<DraggablePanel
-			id={panelType}
-			type={panelType}
-			title={titles[panelType]}
-			onMove={handlePanelMove}
-			showDragHandle
-		>
+		<DraggablePanel id={panelType} type={panelType} title={titles[panelType]} onMove={handlePanelMove} showDragHandle>
 			{panels[panelType]}
 		</DraggablePanel>
 	);
 
 	return (
 		<DndProvider backend={HTML5Backend}>
-			<S.PageWrapper className="problem-solve-page dark">
-				<S.TopBar>
-					<div style={{ display: "flex", alignItems: "center" }}>
-						<S.BackLink type="button" onClick={() => navigate(`/sections/${sectionId}/dashboard`)}>
-							← 대시보드로
-						</S.BackLink>
-						<S.TopBarTitle>코딩 실습</S.TopBarTitle>
-						<S.TopBarDescription>
-							과제·코딩테스트와 무관하게 자유롭게 코드를 실행해볼 수 있습니다. 채점(정답 비교)은 하지 않습니다.
-						</S.TopBarDescription>
-					</div>
-				</S.TopBar>
-				<S.MainSplit>
+			<PS.PageWrapper className={`problem-solve-page ${theme}`} $theme={theme}>
+				<PS.Header $theme={theme}>
+					<PS.HeaderBreadcrumbWrap>
+						<PS.Breadcrumb>
+							<PS.BreadcrumbLink type="button" onClick={() => navigate(`/sections/${sectionId}/dashboard`)}>
+								대시보드
+							</PS.BreadcrumbLink>
+							<span> › </span>
+							<PS.BreadcrumbCurrent $theme={theme}>코딩 실습</PS.BreadcrumbCurrent>
+						</PS.Breadcrumb>
+					</PS.HeaderBreadcrumbWrap>
+					<PS.Controls>
+						<PS.ThemeButton type="button" $active={theme === "light"} $theme={theme} onClick={() => setTheme("light")}>
+							Light
+						</PS.ThemeButton>
+						<PS.ThemeButton type="button" $active={theme === "dark"} $theme={theme} onClick={() => setTheme("dark")}>
+							Dark
+						</PS.ThemeButton>
+					</PS.Controls>
+				</PS.Header>
+				<PS.MainSplit>
 					<Split
 						sizes={[65, 35]}
 						direction="horizontal"
 						minSize={200}
 						gutterSize={20}
-						gutterStyle={() => ({ backgroundColor: "#2d3748" })}
+						gutterStyle={() => ({ backgroundColor: theme === "dark" ? "#2d3748" : "#cbd5e0" })}
 						style={{ display: "flex", width: "100%" }}
 					>
 						{renderPanel(panelLayout.left)}
 						<Split
-							sizes={[25, 75]}
+							sizes={[45, 55]}
 							direction="vertical"
 							minSize={80}
 							gutterSize={20}
-							gutterStyle={() => ({ backgroundColor: "#2d3748" })}
+							gutterStyle={() => ({ backgroundColor: theme === "dark" ? "#2d3748" : "#cbd5e0" })}
 							style={{ display: "flex", flexDirection: "column", height: "100%" }}
 						>
 							{renderPanel(panelLayout.topRight)}
 							{renderPanel(panelLayout.bottomRight)}
 						</Split>
 					</Split>
-				</S.MainSplit>
-			</S.PageWrapper>
+				</PS.MainSplit>
+			</PS.PageWrapper>
 		</DndProvider>
 	);
 }
