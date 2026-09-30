@@ -4,8 +4,8 @@ export interface Section {
 	sectionId: number;
 	courseTitle: string;
 	sectionNumber: string;
-	year: number;
-	semester:
+	year?: number;
+	semester?:
 		| "SPRING"
 		| "SUMMER"
 		| "FALL"

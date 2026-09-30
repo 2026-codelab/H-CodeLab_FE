@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import TutorHeader from "../../components/Tutor/TutorHeader";
 import TutorNotificationPanel from "../../components/Tutor/TutorNotificationPanel";
 import APIService from "../../services/APIService";
+import { getSemesterLabel } from "../../pages/TutorPage/Dashboard/hooks/useDashboard";
 import {
 	FaHome,
 	FaBook,
@@ -82,22 +83,8 @@ const TutorLayout: React.FC<TutorLayoutProps> = ({
 	const sectionIdFromUrl =
 		params.sectionId || location.pathname.match(/\/section\/(\d+)/)?.[1];
 
-	const getSemesterLabel = (semester: string): string => {
-		switch (semester) {
-			case "SPRING":
-				return "1학기";
-			case "SUMMER":
-				return "여름학기";
-			case "FALL":
-				return "2학기";
-			case "WINTER":
-				return "겨울학기";
-			default:
-				return "1학기";
-		}
-	};
-
-	const getCompactSemesterInfo = (year: number, semester: string): string => {
+	const getCompactSemesterInfo = (year?: number, semester?: string): string => {
+		if (year == null || !semester) return "";
 		const semesterNum =
 			semester === "SPRING"
 				? "1"
@@ -107,7 +94,7 @@ const TutorLayout: React.FC<TutorLayoutProps> = ({
 						? "S"
 						: semester === "WINTER"
 							? "W"
-							: "1";
+							: getSemesterLabel(semester);
 		return `${year}-${semesterNum}`;
 	};
 
@@ -138,10 +125,8 @@ const TutorLayout: React.FC<TutorLayoutProps> = ({
 							sectionId: section.sectionId,
 							courseTitle: section.sectionInfo?.courseTitle || "",
 							sectionNumber: section.sectionInfo?.sectionNumber || "",
-							year: section.sectionInfo?.year ?? new Date().getFullYear(),
-							semester:
-								(section.sectionInfo?.semester as Section["semester"]) ||
-								"SPRING",
+							year: section.sectionInfo?.year,
+							semester: section.sectionInfo?.semester as Section["semester"],
 							instructor: section.sectionInfo?.instructorName || "",
 							enrollmentCode: section.sectionInfo?.enrollmentCode || undefined,
 							_role: section.role === "ADMIN" ? "ADMIN" : "TUTOR",
@@ -330,9 +315,13 @@ const TutorLayout: React.FC<TutorLayoutProps> = ({
 		return yearMatch && semesterMatch;
 	});
 
-	const availableYears = [...new Set(sections.map((s) => s.year))].sort(
-		(a, b) => b - a,
-	);
+	const availableYears = [
+		...new Set(
+			sections
+				.map((s) => s.year)
+				.filter((year): year is number => year != null),
+		),
+	].sort((a, b) => b - a);
 
 	const mainMenuItems = useMemo<MenuItem[]>(
 		() => [
@@ -668,12 +657,15 @@ const TutorLayout: React.FC<TutorLayoutProps> = ({
 												<S.SectionCardTitle $collapsed={sidebarCollapsed}>
 													{currentSection.courseTitle}
 												</S.SectionCardTitle>
-												<S.SectionCardBadge $collapsed={sidebarCollapsed}>
-													{getCompactSemesterInfo(
-														currentSection.year,
-														currentSection.semester,
+												{currentSection.year != null &&
+													currentSection.semester && (
+														<S.SectionCardBadge $collapsed={sidebarCollapsed}>
+															{getCompactSemesterInfo(
+																currentSection.year,
+																currentSection.semester,
+															)}
+														</S.SectionCardBadge>
 													)}
-												</S.SectionCardBadge>
 											</S.SectionCardHeader>
 											<S.SectionCardActions $collapsed={sidebarCollapsed}>
 												<S.SectionChangeBtn
@@ -834,8 +826,8 @@ const TutorLayout: React.FC<TutorLayoutProps> = ({
 														{section.courseTitle}
 													</S.SectionModalItemTitle>
 													<S.SectionModalItemSubtitle>
-														{section.year}년{" "}
-														{getSemesterLabel(section.semester)}
+														{section.year != null && `${section.year}년 `}
+														{getSemesterLabel(section.semester ?? "")}
 													</S.SectionModalItemSubtitle>
 												</S.SectionModalItemContent>
 												{isSelected && (
