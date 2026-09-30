@@ -8,7 +8,7 @@ const Footer: React.FC = () => {
         <S.FooterContent>
           <S.FooterText>연락처 및 기타 정보</S.FooterText>
           <S.FooterPlaceholder>
-            <S.PlaceholderItem>이메일: contact@codesturdy.com</S.PlaceholderItem>
+            <S.PlaceholderItem>이메일: kkim@handong.edu</S.PlaceholderItem>
             <S.PlaceholderItem>주소: 한동대학교</S.PlaceholderItem>
           </S.FooterPlaceholder>
         </S.FooterContent>
