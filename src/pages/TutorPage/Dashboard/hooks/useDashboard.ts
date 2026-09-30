@@ -8,12 +8,15 @@ import type {
 	DashboardAssignment,
 } from "../types";
 
-const initialFormData: DashboardFormData = {
-	courseId: "",
-	courseTitle: "",
-	description: "",
-	year: new Date().getFullYear(),
-	semester: "SPRING",
+const createInitialFormData = (): DashboardFormData => {
+	const current = getCurrentSemester();
+	return {
+		courseId: "",
+		courseTitle: "",
+		description: "",
+		year: current.year,
+		semester: current.semester,
+	};
 };
 
 const initialCopyFormData: DashboardCopyFormData = {
@@ -53,6 +56,46 @@ export function getSemesterLabel(semester: string): string {
 	}
 }
 
+/**
+ * 학기 종료 시점(해당 학기 마지막 날의 다음 날 0시) 반환
+ * 1학기 3~6월, 여름 7~8월, 2학기 9~12월, 겨울 다음 해 1~2월
+ * 기간이 없는 구분(캠프/특강/비정규)은 해당 년도 말까지
+ */
+function getSemesterEnd(year: number, semester: string): Date {
+	switch (semester) {
+		case "SPRING":
+			return new Date(year, 6, 1);
+		case "SUMMER":
+			return new Date(year, 8, 1);
+		case "WINTER":
+			return new Date(year + 1, 2, 1);
+		default:
+			return new Date(year + 1, 0, 1);
+	}
+}
+
+/** 이미 끝난 학기인지 여부 */
+export function isPastSemester(
+	year: number,
+	semester: string,
+	now: Date = new Date(),
+): boolean {
+	return now >= getSemesterEnd(year, semester);
+}
+
+/** 오늘 날짜 기준 현재 학기 (1~2월은 전년도 겨울학기) */
+export function getCurrentSemester(now: Date = new Date()): {
+	year: number;
+	semester: string;
+} {
+	const year = now.getFullYear();
+	const month = now.getMonth() + 1;
+	if (month <= 2) return { year: year - 1, semester: "WINTER" };
+	if (month <= 6) return { year, semester: "SPRING" };
+	if (month <= 8) return { year, semester: "SUMMER" };
+	return { year, semester: "FALL" };
+}
+
 export function formatDate(dateString: string): string {
 	if (!dateString) return "";
 	const date = new Date(dateString);
@@ -70,7 +113,7 @@ export function useDashboard() {
 	const [filterSemester, setFilterSemester] = useState("ALL");
 	const [filterStatus, setFilterStatus] = useState("ALL");
 	const [showCreateModal, setShowCreateModal] = useState(false);
-	const [formData, setFormData] = useState<DashboardFormData>(initialFormData);
+	const [formData, setFormData] = useState<DashboardFormData>(createInitialFormData);
 	const [showCopyModal, setShowCopyModal] = useState(false);
 	const [isCreatingSection, setIsCreatingSection] = useState(false);
 	const [isCopyingSection, setIsCopyingSection] = useState(false);
@@ -148,7 +191,7 @@ export function useDashboard() {
 			});
 			alert("수업이 성공적으로 생성되었습니다!");
 			setShowCreateModal(false);
-			setFormData(initialFormData);
+			setFormData(createInitialFormData());
 			await fetchSections();
 			window.dispatchEvent(new Event("tutor-sections-refresh"));
 		} catch (err: unknown) {
