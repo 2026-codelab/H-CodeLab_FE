@@ -137,6 +137,57 @@ export function formatDate(dateString: string): string {
 	return `${y}.${m}.${d}`;
 }
 
+/**
+ * 새 수업 만들기 모달 상태와 생성 처리
+ * 관리 페이지 대시보드와 내 강의실에서 함께 사용
+ */
+export function useCreateSection(onCreated?: () => void | Promise<void>) {
+	const [showCreateModal, setShowCreateModal] = useState(false);
+	const [formData, setFormData] = useState<DashboardFormData>(createInitialFormData);
+	const [isCreatingSection, setIsCreatingSection] = useState(false);
+
+	const handleCreateSection = async () => {
+		if (!formData.courseTitle?.toString().trim()) {
+			alert("새 강의 제목을 입력해주세요.");
+			return;
+		}
+		setIsCreatingSection(true);
+		try {
+			const courseResponse = await APIService.createCourse({
+				title: formData.courseTitle.toString().trim(),
+				description: formData.description?.toString() || "",
+			});
+			const courseId = courseResponse.id;
+			await APIService.createSection({
+				courseId,
+				instructorId: await APIService.getCurrentUserId(),
+				sectionNumber: null,
+				year: Number.parseInt(String(formData.year)),
+				semester: formData.semester,
+			});
+			alert("수업이 성공적으로 생성되었습니다!");
+			setShowCreateModal(false);
+			setFormData(createInitialFormData());
+			await onCreated?.();
+			window.dispatchEvent(new Event("tutor-sections-refresh"));
+		} catch (err: unknown) {
+			console.error("수업 생성 실패:", err);
+			alert((err as Error).message || "수업 생성에 실패했습니다.");
+		} finally {
+			setIsCreatingSection(false);
+		}
+	};
+
+	return {
+		showCreateModal,
+		setShowCreateModal,
+		formData,
+		setFormData,
+		isCreatingSection,
+		handleCreateSection,
+	};
+}
+
 export function useDashboard() {
 	const [sections, setSections] = useState<DashboardSection[]>([]);
 	const [loading, setLoading] = useState(true);
@@ -144,10 +195,15 @@ export function useDashboard() {
 	const [filterYear, setFilterYear] = useState("ALL");
 	const [filterSemester, setFilterSemester] = useState("ALL");
 	const [filterStatus, setFilterStatus] = useState("ALL");
-	const [showCreateModal, setShowCreateModal] = useState(false);
-	const [formData, setFormData] = useState<DashboardFormData>(createInitialFormData);
+	const {
+		showCreateModal,
+		setShowCreateModal,
+		formData,
+		setFormData,
+		isCreatingSection,
+		handleCreateSection,
+	} = useCreateSection(() => fetchSections());
 	const [showCopyModal, setShowCopyModal] = useState(false);
-	const [isCreatingSection, setIsCreatingSection] = useState(false);
 	const [isCopyingSection, setIsCopyingSection] = useState(false);
 	const [copyFormData, setCopyFormData] =
 		useState<DashboardCopyFormData>(createInitialCopyFormData);
@@ -201,38 +257,6 @@ export function useDashboard() {
 				document.removeEventListener("mousedown", handleClickOutside);
 		}
 	}, [openDropdownId]);
-
-	const handleCreateSection = async () => {
-		if (!formData.courseTitle?.toString().trim()) {
-			alert("새 강의 제목을 입력해주세요.");
-			return;
-		}
-		setIsCreatingSection(true);
-		try {
-			const courseResponse = await APIService.createCourse({
-				title: formData.courseTitle.toString().trim(),
-				description: formData.description?.toString() || "",
-			});
-			const courseId = courseResponse.id;
-			await APIService.createSection({
-				courseId,
-				instructorId: await APIService.getCurrentUserId(),
-				sectionNumber: null,
-				year: Number.parseInt(String(formData.year)),
-				semester: formData.semester,
-			});
-			alert("수업이 성공적으로 생성되었습니다!");
-			setShowCreateModal(false);
-			setFormData(createInitialFormData());
-			await fetchSections();
-			window.dispatchEvent(new Event("tutor-sections-refresh"));
-		} catch (err: unknown) {
-			console.error("수업 생성 실패:", err);
-			alert((err as Error).message || "수업 생성에 실패했습니다.");
-		} finally {
-			setIsCreatingSection(false);
-		}
-	};
 
 	const handleToggleActive = async (
 		sectionId: number,

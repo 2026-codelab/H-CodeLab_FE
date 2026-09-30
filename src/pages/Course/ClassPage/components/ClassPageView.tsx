@@ -2,6 +2,7 @@ import Header from "../../../../components/Layout/Header";
 import Footer from "../../../../components/Layout/Footer";
 import CourseCard from "../../../../components/Course/CourseCard";
 import LoadingSpinner from "../../../../components/UI/LoadingSpinner";
+import CreateSectionModal from "../../../TutorPage/Dashboard/components/CreateSectionModal";
 import type { ClassPageHookReturn } from "../hooks/useClassPage";
 import * as S from "../styles";
 import type { SortType } from "../types";
@@ -59,7 +60,9 @@ export default function ClassPageView(d: ClassPageHookReturn) {
 					<S.EnrollButton onClick={() => d.setShowEnrollModal(true)}>
 						수업 참가
 					</S.EnrollButton>
-					<S.CreateCourseButton onClick={() => d.navigate("/tutor")}>
+					<S.CreateCourseButton
+						onClick={() => d.createSection.setShowCreateModal(true)}
+					>
 						수업 만들기
 					</S.CreateCourseButton>
 					{d.activeTab === "in-progress" && (
@@ -161,6 +164,37 @@ export default function ClassPageView(d: ClassPageHookReturn) {
 						</S.ModalActions>
 					</S.ModalContent>
 				</S.ModalOverlay>
+			)}
+			<CreateSectionModal
+				isOpen={d.createSection.showCreateModal}
+				onClose={() => d.createSection.setShowCreateModal(false)}
+				formData={d.createSection.formData}
+				setFormData={d.createSection.setFormData}
+				onSubmit={d.createSection.handleCreateSection}
+			/>
+			{d.createSection.isCreatingSection && (
+				<div
+					style={{
+						position: "fixed",
+						inset: 0,
+						backgroundColor: "rgba(0,0,0,0.35)",
+						display: "flex",
+						alignItems: "center",
+						justifyContent: "center",
+						zIndex: 10000,
+					}}
+				>
+					<div
+						style={{
+							background: "white",
+							padding: "1.5rem 2rem",
+							borderRadius: "12px",
+							boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+						}}
+					>
+						<LoadingSpinner message="수업 만들기..." />
+					</div>
+				</div>
 			)}
 			<Footer />
 		</S.ClassPageContainer>
