@@ -33,6 +33,10 @@ interface Position {
 	bottom: number | null;
 }
 
+// 기본 위치를 왼쪽 아래 → 오른쪽 아래로 바꾸면서 키 변경 (옛 위치가 사이드바와 겹침)
+const POSITION_STORAGE_KEY = "tutor_notification_position_v2";
+const LEGACY_POSITION_STORAGE_KEY = "tutor_notification_position";
+
 /**
  * TutorNotificationPanel - 튜터 페이지 전용 알림 패널 컴포넌트
  *
@@ -64,7 +68,8 @@ const TutorNotificationPanel: React.FC = () => {
 
 	// localStorage에서 위치 불러오기
 	useEffect(() => {
-		const savedPosition = localStorage.getItem("tutor_notification_position");
+		localStorage.removeItem(LEGACY_POSITION_STORAGE_KEY);
+		const savedPosition = localStorage.getItem(POSITION_STORAGE_KEY);
 		if (savedPosition) {
 			try {
 				const pos = JSON.parse(savedPosition);
@@ -80,10 +85,7 @@ const TutorNotificationPanel: React.FC = () => {
 	// 위치를 localStorage에 저장
 	useEffect(() => {
 		if (position.right !== null && position.bottom !== null) {
-			localStorage.setItem(
-				"tutor_notification_position",
-				JSON.stringify(position),
-			);
+			localStorage.setItem(POSITION_STORAGE_KEY, JSON.stringify(position));
 		}
 	}, [position]);
 
@@ -339,13 +341,8 @@ const TutorNotificationPanel: React.FC = () => {
 		}
 	};
 
-	const getDefaultPosition = () => {
-		if (typeof window === "undefined") return { right: 32, bottom: 32 };
-		return {
-			right: window.innerWidth - 56 - 32,
-			bottom: 32,
-		};
-	};
+	// 기본 위치: 화면 오른쪽 아래 (사이드바와 겹치지 않도록)
+	const getDefaultPosition = () => ({ right: 32, bottom: 32 });
 
 	const defaultPos = getDefaultPosition();
 	const currentRight =
