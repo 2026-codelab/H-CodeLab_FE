@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import Navbar from "../../components/Layout/Navbar";
 import Breadcrumb from "../../components/Layout/Breadcrumb";
 import APIService from "../../services/APIService";
+import { getSemesterLabel } from "../../pages/TutorPage/Dashboard/hooks/useDashboard";
 import * as S from "./styles";
 import type {
 	Section,
@@ -99,21 +100,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
 
 	const sectionIdFromUrl =
 		params.sectionId || location.pathname.match(/\/section\/(\d+)/)?.[1];
-
-	const getSemesterLabel = (semester: string): string => {
-		switch (semester) {
-			case "SPRING":
-				return "1학기";
-			case "SUMMER":
-				return "여름학기";
-			case "FALL":
-				return "2학기";
-			case "WINTER":
-				return "겨울학기";
-			default:
-				return "1학기";
-		}
-	};
 
 	useEffect(() => {
 		const fetchSections = async () => {
