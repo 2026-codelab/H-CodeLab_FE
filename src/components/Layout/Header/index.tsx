@@ -28,8 +28,12 @@ const Header: React.FC<HeaderProps> = ({ onUserNameClick }) => {
 		navigate("/login");
 	};
 
-	// 로그인·/courses에서는 /index, 나머지는 /courses
+	// 비로그인 상태면 항상 /index로. 로그인 상태에서는 로그인·/courses에서는 /index, 나머지는 /courses
 	const handleLogoClick = () => {
+		if (!isAuthenticated) {
+			navigate("/index");
+			return;
+		}
 		navigate(
 			location.pathname === "/login" || location.pathname === "/courses"
 				? "/index"
