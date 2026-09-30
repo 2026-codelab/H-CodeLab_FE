@@ -98,6 +98,23 @@ export function isPastSemester(
 	return now >= getSemesterEnd(year, semester);
 }
 
+/**
+ * 년도가 바뀌어 선택된 학기가 지난 학기가 되면 선택 가능한 첫 학기로 교체
+ * (선택 가능한 학기가 없으면 그대로 둠)
+ */
+export function adjustSemesterForYear(
+	year: number | string,
+	semester: string,
+): string {
+	const yearNum = Number(year);
+	if (year === "" || Number.isNaN(yearNum)) return semester;
+	if (!isPastSemester(yearNum, semester)) return semester;
+	return (
+		SEMESTER_OPTIONS.find((option) => !isPastSemester(yearNum, option)) ??
+		semester
+	);
+}
+
 /** 오늘 날짜 기준 현재 학기 (1~2월은 전년도 겨울학기) */
 export function getCurrentSemester(now: Date = new Date()): {
 	year: number;

@@ -5,6 +5,7 @@ import type { DashboardFormData } from "../types";
 import {
 	PAST_SEMESTER_MSG,
 	SEMESTER_OPTIONS,
+	adjustSemesterForYear,
 	getCurrentSemester,
 	getSemesterLabel,
 	isPastSemester,
@@ -114,7 +115,12 @@ const CreateSectionModal: React.FC<CreateSectionModalProps> = ({
 								value={formData.year}
 								onChange={(e) => {
 									setErrors((prev) => ({ ...prev, year: false }));
-									setFormData((prev) => ({ ...prev, year: e.target.value }));
+									const year = e.target.value;
+									setFormData((prev) => ({
+										...prev,
+										year,
+										semester: adjustSemesterForYear(year, prev.semester),
+									}));
 								}}
 								placeholder={String(minYear)}
 								min={minYear}
@@ -135,15 +141,13 @@ const CreateSectionModal: React.FC<CreateSectionModalProps> = ({
 									showPastSemester ? { borderColor: "#dc2626" } : undefined
 								}
 							>
-								{SEMESTER_OPTIONS.map((semester) => {
-									const past = yearOk && isPastSemester(yearVal, semester);
-									return (
-										<option key={semester} value={semester} disabled={past}>
-											{getSemesterLabel(semester)}
-											{past ? " (지난 학기)" : ""}
-										</option>
-									);
-								})}
+								{SEMESTER_OPTIONS.filter(
+									(semester) => !yearOk || !isPastSemester(yearVal, semester),
+								).map((semester) => (
+									<option key={semester} value={semester}>
+										{getSemesterLabel(semester)}
+									</option>
+								))}
 							</S.FormSelect>
 						</S.FormGroup>
 					</S.FormRow>

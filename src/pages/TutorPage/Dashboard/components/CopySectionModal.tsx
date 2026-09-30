@@ -3,6 +3,7 @@ import * as S from "../styles";
 import {
 	PAST_SEMESTER_MSG,
 	SEMESTER_OPTIONS,
+	adjustSemesterForYear,
 	getCurrentSemester,
 	getSemesterLabel,
 	isPastSemester,
@@ -212,12 +213,14 @@ const CopySectionModal: React.FC<CopySectionModalProps> = (props) => {
 										id="copy-year"
 										type="number"
 										value={copyFormData.year}
-										onChange={(e) =>
+										onChange={(e) => {
+											const year = e.target.value;
 											setCopyFormData((prev) => ({
 												...prev,
-												year: e.target.value,
-											}))
-										}
+												year,
+												semester: adjustSemesterForYear(year, prev.semester),
+											}));
+										}}
 										placeholder={String(minYear)}
 										min={minYear}
 										max={2099}
@@ -238,15 +241,13 @@ const CopySectionModal: React.FC<CopySectionModalProps> = (props) => {
 											showPastSemester ? { borderColor: "#dc2626" } : undefined
 										}
 									>
-										{SEMESTER_OPTIONS.map((semester) => {
-											const past = yearOk && isPastSemester(yearVal, semester);
-											return (
-												<option key={semester} value={semester} disabled={past}>
-													{getSemesterLabel(semester)}
-													{past ? " (지난 학기)" : ""}
-												</option>
-											);
-										})}
+										{SEMESTER_OPTIONS.filter(
+											(semester) => !yearOk || !isPastSemester(yearVal, semester),
+										).map((semester) => (
+											<option key={semester} value={semester}>
+												{getSemesterLabel(semester)}
+											</option>
+										))}
 									</S.FormSelect>
 								</S.FormGroup>
 							</S.FormRow>
