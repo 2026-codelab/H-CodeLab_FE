@@ -19,21 +19,36 @@ const createInitialFormData = (): DashboardFormData => {
 	};
 };
 
-const initialCopyFormData: DashboardCopyFormData = {
-	sourceSectionId: "",
-	courseTitle: "",
-	description: "",
-	year: new Date().getFullYear(),
-	semester: "SPRING",
-	copyNotices: true,
-	copyAssignments: true,
-	selectedNoticeIds: [],
-	selectedAssignmentIds: [],
-	assignmentProblems: {},
-	noticeEdits: {},
-	assignmentEdits: {},
-	problemEdits: {},
+const createInitialCopyFormData = (): DashboardCopyFormData => {
+	const current = getCurrentSemester();
+	return {
+		sourceSectionId: "",
+		courseTitle: "",
+		description: "",
+		year: current.year,
+		semester: current.semester,
+		copyNotices: true,
+		copyAssignments: true,
+		selectedNoticeIds: [],
+		selectedAssignmentIds: [],
+		assignmentProblems: {},
+		noticeEdits: {},
+		assignmentEdits: {},
+		problemEdits: {},
+	};
 };
+
+export const SEMESTER_OPTIONS = [
+	"SPRING",
+	"SUMMER",
+	"FALL",
+	"WINTER",
+	"CAMP",
+	"SPECIAL",
+	"IRREGULAR",
+];
+
+export const PAST_SEMESTER_MSG = "지난 학기에는 수업을 만들 수 없습니다.";
 
 export function getSemesterLabel(semester: string): string {
 	switch (semester) {
@@ -118,7 +133,7 @@ export function useDashboard() {
 	const [isCreatingSection, setIsCreatingSection] = useState(false);
 	const [isCopyingSection, setIsCopyingSection] = useState(false);
 	const [copyFormData, setCopyFormData] =
-		useState<DashboardCopyFormData>(initialCopyFormData);
+		useState<DashboardCopyFormData>(createInitialCopyFormData);
 	const [sourceNotices, setSourceNotices] = useState<DashboardNotice[]>([]);
 	const [sourceAssignments, setSourceAssignments] = useState<
 		DashboardAssignment[]
@@ -457,6 +472,15 @@ export function useDashboard() {
 			alert("새 수업 제목을 입력해주세요.");
 			return;
 		}
+		if (
+			isPastSemester(
+				Number.parseInt(String(copyFormData.year)),
+				copyFormData.semester,
+			)
+		) {
+			alert(PAST_SEMESTER_MSG);
+			return;
+		}
 		setIsCopyingSection(true);
 		try {
 			const response = await APIService.copySection(
@@ -479,7 +503,7 @@ export function useDashboard() {
 				alert("수업이 성공적으로 복사되었습니다!");
 				setShowCopyModal(false);
 				setCopyStep(1);
-				setCopyFormData(initialCopyFormData);
+				setCopyFormData(createInitialCopyFormData());
 				setSourceNotices([]);
 				setSourceAssignments([]);
 				setExpandedAssignments({});

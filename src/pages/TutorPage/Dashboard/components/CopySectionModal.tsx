@@ -1,6 +1,12 @@
 import type React from "react";
 import * as S from "../styles";
-import { getSemesterLabel } from "../hooks/useDashboard";
+import {
+	PAST_SEMESTER_MSG,
+	SEMESTER_OPTIONS,
+	getCurrentSemester,
+	getSemesterLabel,
+	isPastSemester,
+} from "../hooks/useDashboard";
 import type {
 	DashboardSection,
 	DashboardCopyFormData,
@@ -87,6 +93,16 @@ const CopySectionModal: React.FC<CopySectionModalProps> = (props) => {
 		onViewNotice,
 	} = props;
 
+	const minYear = getCurrentSemester().year;
+	const yearVal =
+		copyFormData.year != null && copyFormData.year !== ""
+			? Number(copyFormData.year)
+			: Number.NaN;
+	const yearOk = !Number.isNaN(yearVal) && yearVal >= 2020 && yearVal <= 2099;
+	const semesterOk = yearOk && !isPastSemester(yearVal, copyFormData.semester);
+	// 년도를 바꿔 이미 고른 학기가 지난 학기가 된 경우에도 바로 안내
+	const showPastSemester = yearOk && !semesterOk;
+
 	const handleNext = () => {
 		if (copyStep === 1 && !copyFormData.sourceSectionId) {
 			alert("복사할 수업을 선택해주세요.");
@@ -94,6 +110,14 @@ const CopySectionModal: React.FC<CopySectionModalProps> = (props) => {
 		}
 		if (copyStep === 1 && !copyFormData.courseTitle) {
 			alert("새 수업 제목을 입력해주세요.");
+			return;
+		}
+		if (copyStep === 1 && !yearOk) {
+			alert("년도를 올바르게 입력해주세요.");
+			return;
+		}
+		if (copyStep === 1 && !semesterOk) {
+			alert(PAST_SEMESTER_MSG);
 			return;
 		}
 		if (
@@ -194,8 +218,8 @@ const CopySectionModal: React.FC<CopySectionModalProps> = (props) => {
 												year: e.target.value,
 											}))
 										}
-										placeholder="2025"
-										min={2020}
+										placeholder={String(minYear)}
+										min={minYear}
 										max={2099}
 									/>
 								</S.FormGroup>
@@ -210,17 +234,27 @@ const CopySectionModal: React.FC<CopySectionModalProps> = (props) => {
 												semester: e.target.value,
 											}))
 										}
+										style={
+											showPastSemester ? { borderColor: "#dc2626" } : undefined
+										}
 									>
-										<option value="SPRING">1학기</option>
-										<option value="SUMMER">여름학기</option>
-										<option value="FALL">2학기</option>
-										<option value="WINTER">겨울학기</option>
-										<option value="CAMP">캠프</option>
-										<option value="SPECIAL">특강</option>
-										<option value="IRREGULAR">비정규 세션</option>
+										{SEMESTER_OPTIONS.map((semester) => {
+											const past = yearOk && isPastSemester(yearVal, semester);
+											return (
+												<option key={semester} value={semester} disabled={past}>
+													{getSemesterLabel(semester)}
+													{past ? " (지난 학기)" : ""}
+												</option>
+											);
+										})}
 									</S.FormSelect>
 								</S.FormGroup>
 							</S.FormRow>
+							{showPastSemester && (
+								<S.RequiredMessage role="alert">
+									{PAST_SEMESTER_MSG}
+								</S.RequiredMessage>
+							)}
 							<S.FormGroup>
 								<S.CheckboxLabel $large>
 									<input
@@ -665,7 +699,10 @@ const CopySectionModal: React.FC<CopySectionModalProps> = (props) => {
 							다음
 						</S.BtnSubmit>
 					) : (
-						<S.BtnSubmit onClick={handleCopySection} disabled={loading}>
+						<S.BtnSubmit
+							onClick={handleCopySection}
+							disabled={loading || !semesterOk}
+						>
 							{loading ? "복사 중..." : "복사하기"}
 						</S.BtnSubmit>
 					)}

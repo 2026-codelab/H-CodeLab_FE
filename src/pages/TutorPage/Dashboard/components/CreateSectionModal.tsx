@@ -3,23 +3,14 @@ import { useState } from "react";
 import * as S from "../styles";
 import type { DashboardFormData } from "../types";
 import {
+	PAST_SEMESTER_MSG,
+	SEMESTER_OPTIONS,
 	getCurrentSemester,
 	getSemesterLabel,
 	isPastSemester,
 } from "../hooks/useDashboard";
 
 const REQUIRED_MSG = "필수 항목(*)을 입력해 주세요.";
-const PAST_SEMESTER_MSG = "지난 학기에는 수업을 만들 수 없습니다.";
-
-const SEMESTER_OPTIONS = [
-	"SPRING",
-	"SUMMER",
-	"FALL",
-	"WINTER",
-	"CAMP",
-	"SPECIAL",
-	"IRREGULAR",
-];
 
 interface CreateSectionModalProps {
 	isOpen: boolean;
