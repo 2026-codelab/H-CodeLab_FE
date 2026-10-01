@@ -2,6 +2,14 @@ import type React from "react";
 import { useState } from "react";
 import * as S from "../styles";
 import type { DashboardFormData } from "../types";
+import {
+	PAST_SEMESTER_MSG,
+	SEMESTER_OPTIONS,
+	adjustSemesterForYear,
+	getCurrentSemester,
+	getSemesterLabel,
+	isPastSemester,
+} from "../hooks/useDashboard";
 
 const REQUIRED_MSG = "필수 항목(*)을 입력해 주세요.";
 
@@ -29,19 +37,24 @@ const CreateSectionModal: React.FC<CreateSectionModalProps> = ({
 		formData.year != null && formData.year !== ""
 			? Number(formData.year)
 			: Number.NaN;
+	const minYear = getCurrentSemester().year;
 	const yearOk = !Number.isNaN(yearVal) && yearVal >= 2020 && yearVal <= 2099;
+	const semesterOk = yearOk && !isPastSemester(yearVal, formData.semester);
 	const hasTitle = titleTrimmed.length > 0;
 
 	const handleSubmit = () => {
 		const errs: Record<string, boolean> = {};
 		if (!hasTitle) errs.courseTitle = true;
 		if (!yearOk) errs.year = true;
+		else if (!semesterOk) errs.semester = true;
 		setErrors(errs);
 		if (Object.keys(errs).length > 0) return;
 		onSubmit();
 	};
 
-	const hasErrors = Object.keys(errors).length > 0;
+	const hasRequiredErrors = Boolean(errors.courseTitle || errors.year);
+	// 년도를 바꿔 이미 고른 학기가 지난 학기가 된 경우에도 바로 안내
+	const showPastSemester = yearOk && !semesterOk;
 
 	return (
 		<S.ModalOverlay onClick={onClose}>
@@ -51,8 +64,13 @@ const CreateSectionModal: React.FC<CreateSectionModalProps> = ({
 					<S.ModalClose onClick={onClose}>×</S.ModalClose>
 				</S.ModalHeader>
 				<S.ModalBody>
-					{hasErrors && (
+					{hasRequiredErrors && (
 						<S.RequiredMessage role="alert">{REQUIRED_MSG}</S.RequiredMessage>
+					)}
+					{showPastSemester && (
+						<S.RequiredMessage role="alert">
+							{PAST_SEMESTER_MSG}
+						</S.RequiredMessage>
 					)}
 					<S.FormGroup>
 						<label htmlFor="create-section-course-title">강의 제목 *</label>
@@ -97,10 +115,15 @@ const CreateSectionModal: React.FC<CreateSectionModalProps> = ({
 								value={formData.year}
 								onChange={(e) => {
 									setErrors((prev) => ({ ...prev, year: false }));
-									setFormData((prev) => ({ ...prev, year: e.target.value }));
+									const year = e.target.value;
+									setFormData((prev) => ({
+										...prev,
+										year,
+										semester: adjustSemesterForYear(year, prev.semester),
+									}));
 								}}
-								placeholder="2025"
-								min={2020}
+								placeholder={String(minYear)}
+								min={minYear}
 								max={2099}
 								style={errors.year ? { borderColor: "#dc2626" } : undefined}
 							/>
@@ -110,17 +133,21 @@ const CreateSectionModal: React.FC<CreateSectionModalProps> = ({
 							<S.FormSelect
 								id="create-section-semester"
 								value={formData.semester}
-								onChange={(e) =>
-									setFormData((prev) => ({ ...prev, semester: e.target.value }))
+								onChange={(e) => {
+									setErrors((prev) => ({ ...prev, semester: false }));
+									setFormData((prev) => ({ ...prev, semester: e.target.value }));
+								}}
+								style={
+									showPastSemester ? { borderColor: "#dc2626" } : undefined
 								}
 							>
-								<option value="SPRING">1학기</option>
-								<option value="SUMMER">여름학기</option>
-								<option value="FALL">2학기</option>
-								<option value="WINTER">겨울학기</option>
-								<option value="CAMP">캠프</option>
-								<option value="SPECIAL">특강</option>
-								<option value="IRREGULAR">비정규 세션</option>
+								{SEMESTER_OPTIONS.filter(
+									(semester) => !yearOk || !isPastSemester(yearVal, semester),
+								).map((semester) => (
+									<option key={semester} value={semester}>
+										{getSemesterLabel(semester)}
+									</option>
+								))}
 							</S.FormSelect>
 						</S.FormGroup>
 					</S.FormRow>
@@ -130,7 +157,7 @@ const CreateSectionModal: React.FC<CreateSectionModalProps> = ({
 					<S.BtnSubmit
 						type="button"
 						onClick={handleSubmit}
-						disabled={!hasTitle || !yearOk}
+						disabled={!hasTitle || !yearOk || !semesterOk}
 					>
 						생성하기
 					</S.BtnSubmit>

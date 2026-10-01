@@ -4,6 +4,7 @@ import { useAuth } from "./hooks/useAuth";
 import { RecoilRoot } from "recoil";
 import AdminRoute from "./components/Route/AdminRoute";
 import SuperAdminRoute from "./components/Route/SuperAdminRoute";
+import AuthRoute from "./components/Route/AuthRoute";
 import TutorAccessGate from "./components/Route/TutorAccessGate";
 // Auth (공통 / 로그인)
 import IndexPage from "./pages/Auth/IndexPage";
@@ -84,47 +85,101 @@ const App: React.FC = () => {
 					<Route path="/forgot-password" element={<ForgotPasswordPage />} />
 					<Route path="/reset-password" element={<ResetPasswordPage />} />
 					<Route path="/index" element={<IndexPage />} />
-					<Route path="/courses" element={<ClassPage />} />
-					<Route path="/dashboard" element={<CourseDashboardPage />} />
+					<Route
+						path="/courses"
+						element={
+							<AuthRoute>
+								<ClassPage />
+							</AuthRoute>
+						}
+					/>
+					<Route
+						path="/dashboard"
+						element={
+							<AuthRoute>
+								<CourseDashboardPage />
+							</AuthRoute>
+						}
+					/>
 					<Route
 						path="/sections/:sectionId/dashboard"
-						element={<CourseDashboardPage />}
+						element={
+							<AuthRoute>
+								<CourseDashboardPage />
+							</AuthRoute>
+						}
 					/>
 					<Route
 						path="/sections/:sectionId/course-assignments"
-						element={<CourseAssignmentsPage />}
+						element={
+							<AuthRoute>
+								<CourseAssignmentsPage />
+							</AuthRoute>
+						}
 					/>
 					<Route
 						path="/sections/:sectionId/course-notices"
-						element={<CourseNoticesPage />}
+						element={
+							<AuthRoute>
+								<CourseNoticesPage />
+							</AuthRoute>
+						}
 					/>
 					<Route
 						path="/sections/:sectionId/course-notices/:noticeId"
-						element={<CourseNoticeDetailPage />}
+						element={
+							<AuthRoute>
+								<CourseNoticeDetailPage />
+							</AuthRoute>
+						}
 					/>
 					<Route
 						path="/sections/:sectionId/community"
-						element={<CourseCommunityPage />}
+						element={
+							<AuthRoute>
+								<CourseCommunityPage />
+							</AuthRoute>
+						}
 					/>
 					<Route
 						path="/sections/:sectionId/community/new"
-						element={<QuestionCreatePage />}
+						element={
+							<AuthRoute>
+								<QuestionCreatePage />
+							</AuthRoute>
+						}
 					/>
 					<Route
 						path="/sections/:sectionId/community/:questionId"
-						element={<QuestionDetailPage />}
+						element={
+							<AuthRoute>
+								<QuestionDetailPage />
+							</AuthRoute>
+						}
 					/>
 					<Route
 						path="/sections/:sectionId/community/:questionId/edit"
-						element={<QuestionEditPage />}
+						element={
+							<AuthRoute>
+								<QuestionEditPage />
+							</AuthRoute>
+						}
 					/>
 					<Route
 						path="/sections/:sectionId/coding-quiz"
-						element={<CodingQuizPage />}
+						element={
+							<AuthRoute>
+								<CodingQuizPage />
+							</AuthRoute>
+						}
 					/>
 					<Route
 						path="/sections/:sectionId/coding-quiz/:quizId"
-						element={<CodingQuizSolvePage />}
+						element={
+							<AuthRoute>
+								<CodingQuizSolvePage />
+							</AuthRoute>
+						}
 					/>
 					<Route
 						path="/sections/:sectionId/coding-practice"
@@ -132,7 +187,11 @@ const App: React.FC = () => {
 					/>
 					<Route
 						path="/sections/:sectionId/alarm"
-						element={<CourseNotificationsPage />}
+						element={
+							<AuthRoute>
+								<CourseNotificationsPage />
+							</AuthRoute>
+						}
 					/>
 					<Route path="/auth/callback" element={<AuthCallback />} />
 					<Route path="/signup" element={<SignUpPageSocial />} />
@@ -140,7 +199,11 @@ const App: React.FC = () => {
 					<Route path="/enroll/:enrollmentCode" element={<EnrollPage />} />
 					<Route
 						path="/sections/:sectionId/assignments/:assignmentId/detail/problems/:problemId"
-						element={<ProblemSolvePage />}
+						element={
+							<AuthRoute>
+								<ProblemSolvePage />
+							</AuthRoute>
+						}
 					/>
 					{/* 수업관리자 (tutor) 라우트 - 학생은 접근 불가, alert 후 /courses로 */}
 					<Route

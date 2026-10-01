@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../../hooks/useAuth";
 import APIService from "../../../../services/APIService";
+import { useCreateSection } from "../../../TutorPage/Dashboard/hooks/useDashboard";
 import type { Section, CourseCardData, TabType, SortType } from "../types";
 import {
 	transformSectionData,
@@ -69,6 +70,12 @@ export function useClassPage() {
 			fetchManagingSections();
 		}
 	}, [isAuthenticated, fetchManagingSections]);
+
+	// 수업 만들기: 관리 페이지로 이동하지 않고 이 페이지에서 바로 모달로 생성
+	const createSection = useCreateSection(async () => {
+		await fetchManagingSections();
+		setActiveTab("in-progress");
+	});
 
 	const handleStatusUpdate = useCallback(async () => {
 		try {
@@ -168,6 +175,7 @@ export function useClassPage() {
 		filteredSections,
 		handleStatusUpdate,
 		handleEnrollByCode,
+		createSection,
 	};
 }
 
