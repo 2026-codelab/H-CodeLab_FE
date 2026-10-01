@@ -127,6 +127,26 @@ export function useClassPage() {
 		[getFilteredSections],
 	);
 
+	const managingSectionIds = useMemo(
+		() => new Set(managingSections.map((s) => s.sectionId)),
+		[managingSections],
+	);
+
+	// 내가 관리하는 수업(교수·튜터)은 어느 탭에서 눌러도 해당 수업의 관리 화면으로 이동
+	const getCourseLinkPath = useCallback(
+		(course: CourseCardData): string | undefined => {
+			if (!course.sectionId) return undefined;
+			if (
+				activeTab === "in-progress" ||
+				managingSectionIds.has(course.sectionId)
+			) {
+				return `/tutor/assignments/section/${course.sectionId}`;
+			}
+			return undefined;
+		},
+		[activeTab, managingSectionIds],
+	);
+
 	const handleEnrollByCode = useCallback(async () => {
 		if (!enrollmentCode.trim()) {
 			alert("참가 코드를 입력하세요.");
@@ -173,6 +193,7 @@ export function useClassPage() {
 		setShowEnrollModal,
 		stats,
 		filteredSections,
+		getCourseLinkPath,
 		handleStatusUpdate,
 		handleEnrollByCode,
 		createSection,
