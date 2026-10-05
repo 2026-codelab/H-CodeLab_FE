@@ -12,6 +12,20 @@ const RECENT_NOTIFICATION_SIZE = 20;
 let loadingUserId: number | null = null;
 
 /**
+ * 전체 안 읽은 알림 개수 (최근 목록 개수와 무관하게 서버 기준)
+ * 응답: { success, data: { count } } — 실패 시 null
+ */
+async function fetchUnreadCount(): Promise<number | null> {
+	try {
+		const response = await APIService.getUnreadNotificationCount();
+		const count = Number(response?.data?.count ?? response?.count);
+		return Number.isFinite(count) ? count : null;
+	} catch {
+		return null;
+	}
+}
+
+/**
  * 상단바 알림 데이터 공통 훅
  * - 알림은 recoil(notificationState)에 보관해서, 페이지 이동으로 상단바가 다시 마운트돼도 다시 부르지 않음
  * - 로그인 사용자가 바뀌면 새로 불러오고, 로그아웃하면 비움
@@ -32,14 +46,16 @@ export function useNotifications() {
 			}));
 
 			try {
-				const [dashboardResponse, notificationsResponse] = await Promise.all([
-					APIService.getInstructorDashboard().catch(() => null),
-					APIService.getCommunityNotifications(
-						null,
-						0,
-						RECENT_NOTIFICATION_SIZE,
-					),
-				]);
+				const [dashboardResponse, notificationsResponse, unreadCount] =
+					await Promise.all([
+						APIService.getInstructorDashboard().catch(() => null),
+						APIService.getCommunityNotifications(
+							null,
+							0,
+							RECENT_NOTIFICATION_SIZE,
+						),
+						fetchUnreadCount(),
+					]);
 				const sections: NotificationSection[] = dashboardResponse?.data || [];
 				const items = (notificationsResponse?.data?.content || []).map(
 					(notif: any) => toDisplayNotification(notif, sections),
@@ -48,7 +64,8 @@ export function useNotifications() {
 				setState({
 					userId: targetUserId,
 					items,
-					unreadCount: items.filter((n) => !n.isRead).length,
+					// 개수 API 실패 시 최근 목록 기준으로 대신 계산
+					unreadCount: unreadCount ?? items.filter((n) => !n.isRead).length,
 					loaded: true,
 					loading: false,
 				});
