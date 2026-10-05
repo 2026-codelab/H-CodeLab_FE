@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../../hooks/useAuth";
 import TutorNotificationPanel from "../../Tutor/TutorNotificationPanel";
 import UserMenu from "../UserMenu";
+import { LoginButton } from "../UserMenu/styles";
 import * as S from "./styles";
 
 interface HeaderProps {
@@ -60,9 +61,9 @@ const Header: React.FC<HeaderProps> = () => {
 							<UserMenu roleLabel={roleLabel} onLogout={handleLogout} />
 						</>
 					) : (
-						<S.LoginButton type="button" onClick={handleLogin}>
+						<LoginButton type="button" onClick={handleLogin}>
 							로그인
-						</S.LoginButton>
+						</LoginButton>
 					)}
 				</S.HeaderLinks>
 			</S.HeaderWrapper>

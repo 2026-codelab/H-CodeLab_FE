@@ -4,6 +4,10 @@ import { useRecoilValue } from "recoil";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { authState } from "../../../recoil/atoms";
 import APIService from "../../../services/APIService";
+import { useAuth } from "../../../hooks/useAuth";
+import { useDropdownDismiss } from "../../../hooks/useDropdownDismiss";
+import TutorNotificationPanel from "../../Tutor/TutorNotificationPanel";
+import UserMenu from "../../Layout/UserMenu";
 import * as S from "./styles";
 
 interface EnrolledCourse {
@@ -32,6 +36,7 @@ const CourseHeader: React.FC<CourseHeaderProps> = ({
 	sectionId: sectionIdProp = null,
 }) => {
 	const auth = useRecoilValue(authState);
+	const { logout } = useAuth();
 	const navigate = useNavigate();
 	const location = useLocation();
 	const { sectionId: sectionIdFromParams } = useParams<{ sectionId: string }>();
@@ -112,25 +117,18 @@ const CourseHeader: React.FC<CourseHeaderProps> = ({
 		}
 	}, [showCourseList, enrolledCourses.length]);
 
-	useEffect(() => {
-		if (!showCourseList) return;
-		const onOutside = (e: MouseEvent) => {
-			if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-				setShowCourseList(false);
-			}
-		};
-		document.addEventListener("mousedown", onOutside);
-		return () => document.removeEventListener("mousedown", onOutside);
-	}, [showCourseList]);
+	// 수업 선택 드롭다운: 바깥 클릭 · Esc · 페이지 이동 시 닫기
+	useDropdownDismiss(dropdownRef, showCourseList, () => setShowCourseList(false));
 
-	useEffect(() => {
-		if (!showCourseList) return;
-		const onEsc = (e: KeyboardEvent) => {
-			if (e.key === "Escape") setShowCourseList(false);
-		};
-		document.addEventListener("keydown", onEsc);
-		return () => document.removeEventListener("keydown", onEsc);
-	}, [showCourseList]);
+	const handleLogout = async () => {
+		try {
+			await logout();
+		} catch (error) {
+			console.error("로그아웃 실패:", error);
+		} finally {
+			navigate("/index");
+		}
+	};
 
 	const handleCourseSelect = (selectedSectionId: number) => {
 		const path = location.pathname.replace(
@@ -195,10 +193,8 @@ const CourseHeader: React.FC<CourseHeaderProps> = ({
 				)}
 			</S.Top>
 			<S.UserSection>
-				<S.UserInfo>
-					{auth.user?.name || "사용자"}
-					{userRole && <S.UserRole> {userRole}</S.UserRole>}
-				</S.UserInfo>
+				<TutorNotificationPanel />
+				<UserMenu roleLabel={userRole} onLogout={handleLogout} />
 			</S.UserSection>
 		</S.Container>
 	);

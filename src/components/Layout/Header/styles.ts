@@ -59,27 +59,3 @@ export const HeaderLinks = styled.div`
   align-items: center;
   margin-right: -50px;
 `;
-
-export const LoginButton = styled.button`
-  padding: 0.55rem 1.25rem;
-  border: none;
-  border-radius: 999px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-
-  &:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-  }
-
-  &:focus-visible {
-    outline: 2px solid #667eea;
-    outline-offset: 2px;
-  }
-`;
