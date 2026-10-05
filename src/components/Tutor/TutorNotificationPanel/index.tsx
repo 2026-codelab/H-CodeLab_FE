@@ -28,6 +28,7 @@ const TutorNotificationPanel: React.FC = () => {
 		unreadCount,
 		loading: loadingNotifications,
 		markAllAsRead,
+		markAsRead,
 	} = useNotifications();
 	const [showNotificationPanel, setShowNotificationPanel] =
 		useState<boolean>(false);
@@ -55,6 +56,9 @@ const TutorNotificationPanel: React.FC = () => {
 		e: React.MouseEvent,
 	) => {
 		e.stopPropagation();
+		if (!notif.isRead) {
+			void markAsRead(notif.id);
+		}
 		const targetPath = getNotificationTargetPath(notif);
 		if (targetPath) {
 			navigate(targetPath);

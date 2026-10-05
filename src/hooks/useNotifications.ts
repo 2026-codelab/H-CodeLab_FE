@@ -116,10 +116,44 @@ export function useNotifications() {
 		}));
 	}, [setState]);
 
+	/**
+	 * 알림 1건 읽음 처리
+	 * 화면 이동을 막지 않도록 로컬 상태를 먼저 바꾸고, 서버 반영 실패 시 되돌림
+	 */
+	const markAsRead = useCallback(
+		async (notificationId: number) => {
+			const target = state.items.find((n) => n.id === notificationId);
+			if (!target || target.isRead) return;
+
+			setState((prev) => ({
+				...prev,
+				items: prev.items.map((n) =>
+					n.id === notificationId ? { ...n, isRead: true } : n,
+				),
+				unreadCount: Math.max(0, prev.unreadCount - 1),
+			}));
+
+			try {
+				await APIService.markCommunityNotificationAsRead(notificationId);
+			} catch (error) {
+				console.error("알림 읽음 처리 실패:", error);
+				setState((prev) => ({
+					...prev,
+					items: prev.items.map((n) =>
+						n.id === notificationId ? { ...n, isRead: false } : n,
+					),
+					unreadCount: prev.unreadCount + 1,
+				}));
+			}
+		},
+		[state.items, setState],
+	);
+
 	return {
 		notifications: state.items,
 		unreadCount: state.unreadCount,
 		loading: state.loading || (userId !== null && !state.loaded),
 		markAllAsRead,
+		markAsRead,
 	};
 }
