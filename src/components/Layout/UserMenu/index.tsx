@@ -63,11 +63,13 @@ const UserMenu: React.FC<UserMenuProps> = ({ roleLabel, onLogout }) => {
 							{initial}
 						</S.Avatar>
 						<S.ProfileText>
-							<S.ProfileName>{displayName}</S.ProfileName>
+							<S.NameRow>
+								<S.ProfileName>{displayName}</S.ProfileName>
+								{roleLabel && <S.RoleBadge>{roleLabel}</S.RoleBadge>}
+							</S.NameRow>
 							{user?.email && user.email !== displayName && (
 								<S.ProfileEmail>{user.email}</S.ProfileEmail>
 							)}
-							{roleLabel && <S.RoleBadge>{roleLabel}</S.RoleBadge>}
 						</S.ProfileText>
 					</S.Profile>
 

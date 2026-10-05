@@ -113,6 +113,13 @@ export const ProfileText = styled.div`
   min-width: 0;
 `;
 
+export const NameRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+`;
+
 export const ProfileName = styled.span`
   font-size: 0.95rem;
   font-weight: 700;
@@ -131,8 +138,7 @@ export const ProfileEmail = styled.span`
 `;
 
 export const RoleBadge = styled.span`
-  align-self: flex-start;
-  margin-top: 0.25rem;
+  flex-shrink: 0;
   padding: 0.1rem 0.5rem;
   border-radius: 999px;
   background: #eef0fb;
