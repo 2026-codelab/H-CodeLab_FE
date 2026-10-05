@@ -71,7 +71,7 @@ const CourseHeader: React.FC<CourseHeaderProps> = ({
 
 					let roleText = "";
 					if (role === "ADMIN" || role === "INSTRUCTOR") {
-						roleText = "교수";
+						roleText = "교수님";
 					} else if (role === "TUTOR") {
 						roleText = "튜터";
 					} else if (role === "STUDENT") {
