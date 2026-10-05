@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate, useParams, useLocation } from "react-router-dom";
 import { useAuth } from "../../../hooks/useAuth";
 import APIService from "../../../services/APIService";
+import TutorNotificationPanel from "../TutorNotificationPanel";
 import * as S from "./styles";
 
 const TutorHeader: React.FC = () => {
@@ -74,6 +75,7 @@ const TutorHeader: React.FC = () => {
 				<S.Right>
 					{isAuthenticated && (
 						<>
+							<TutorNotificationPanel />
 							<S.UserInfo>
 								{user?.name || user?.email}
 								{userRole && <S.UserRole> · {userRole}</S.UserRole>}
