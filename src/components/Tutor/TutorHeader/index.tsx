@@ -1,13 +1,14 @@
 import type React from "react";
 import { useState, useEffect } from "react";
-import { Link, useNavigate, useParams, useLocation } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useAuth } from "../../../hooks/useAuth";
 import APIService from "../../../services/APIService";
 import TutorNotificationPanel from "../TutorNotificationPanel";
+import UserMenu from "../../Layout/UserMenu";
 import * as S from "./styles";
 
 const TutorHeader: React.FC = () => {
-	const { user, isAuthenticated, logout } = useAuth();
+	const { isAuthenticated, logout } = useAuth();
 	const navigate = useNavigate();
 	const params = useParams<{ sectionId: string }>();
 	const location = useLocation();
@@ -76,11 +77,7 @@ const TutorHeader: React.FC = () => {
 					{isAuthenticated && (
 						<>
 							<TutorNotificationPanel />
-							<S.UserInfo>
-								{user?.name || user?.email}
-								{userRole && <S.UserRole> · {userRole}</S.UserRole>}
-							</S.UserInfo>
-							<S.LogoutButton onClick={handleLogout}>로그아웃</S.LogoutButton>
+							<UserMenu roleLabel={userRole} onLogout={handleLogout} />
 						</>
 					)}
 				</S.Right>

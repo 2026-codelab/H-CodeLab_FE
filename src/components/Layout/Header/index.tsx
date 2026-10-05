@@ -1,18 +1,21 @@
 import type React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../../hooks/useAuth";
+import TutorNotificationPanel from "../../Tutor/TutorNotificationPanel";
+import UserMenu from "../UserMenu";
 import * as S from "./styles";
 
 interface HeaderProps {
+	/** 이전 버전 호환용 (이름 클릭 대신 프로필 메뉴를 사용하므로 더 이상 쓰지 않음) */
 	onUserNameClick?: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ onUserNameClick }) => {
+const Header: React.FC<HeaderProps> = () => {
 	const navigate = useNavigate();
 	const location = useLocation();
 	const { logout, user, isAuthenticated } = useAuth();
 
-	const userName = user?.name || user?.username || user?.email || "";
+	const roleLabel = user?.role === "SUPER_ADMIN" ? "시스템 관리자" : null;
 
 	const handleLogout = async () => {
 		try {
@@ -53,15 +56,13 @@ const Header: React.FC<HeaderProps> = ({ onUserNameClick }) => {
 				<S.HeaderLinks>
 					{isAuthenticated ? (
 						<>
-							{userName && (
-								<S.HeaderLink onClick={onUserNameClick || (() => {})}>
-									{userName}
-								</S.HeaderLink>
-							)}
-							<S.HeaderLink onClick={handleLogout}>로그아웃</S.HeaderLink>
+							<TutorNotificationPanel />
+							<UserMenu roleLabel={roleLabel} onLogout={handleLogout} />
 						</>
 					) : (
-						<S.HeaderLink onClick={handleLogin}>로그인</S.HeaderLink>
+						<S.LoginButton type="button" onClick={handleLogin}>
+							로그인
+						</S.LoginButton>
 					)}
 				</S.HeaderLinks>
 			</S.HeaderWrapper>

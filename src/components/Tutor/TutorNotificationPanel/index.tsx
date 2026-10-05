@@ -1,8 +1,9 @@
 import type React from "react";
 import { useState, useEffect, useRef } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { FaBell, FaComments } from "react-icons/fa";
 import APIService from "../../../services/APIService";
+import { useDropdownDismiss } from "../../../hooks/useDropdownDismiss";
 import * as S from "./styles";
 
 
@@ -43,7 +44,6 @@ const LEGACY_POSITION_STORAGE_KEYS = [
  */
 const TutorNotificationPanel: React.FC = () => {
 	const navigate = useNavigate();
-	const location = useLocation();
 	const [notifications, setNotifications] = useState<Notification[]>([]);
 	const [loadingNotifications, setLoadingNotifications] =
 		useState<boolean>(false);
@@ -64,34 +64,10 @@ const TutorNotificationPanel: React.FC = () => {
 		}
 	}, []);
 
-	// 바깥 클릭 · Esc로 닫기
-	useEffect(() => {
-		if (!showNotificationPanel) return;
-
-		const handleMouseDown = (e: MouseEvent) => {
-			if (
-				containerRef.current &&
-				!containerRef.current.contains(e.target as Node)
-			) {
-				setShowNotificationPanel(false);
-			}
-		};
-		const handleKeyDown = (e: KeyboardEvent) => {
-			if (e.key === "Escape") setShowNotificationPanel(false);
-		};
-
-		document.addEventListener("mousedown", handleMouseDown);
-		document.addEventListener("keydown", handleKeyDown);
-		return () => {
-			document.removeEventListener("mousedown", handleMouseDown);
-			document.removeEventListener("keydown", handleKeyDown);
-		};
-	}, [showNotificationPanel]);
-
-	// 페이지 이동 시 닫기
-	useEffect(() => {
-		setShowNotificationPanel(false);
-	}, [location.pathname]);
+	// 바깥 클릭 · Esc · 페이지 이동 시 닫기
+	useDropdownDismiss(containerRef, showNotificationPanel, () =>
+		setShowNotificationPanel(false),
+	);
 
 
 	// 수업 목록 가져오기
