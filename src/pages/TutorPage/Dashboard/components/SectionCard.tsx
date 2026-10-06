@@ -22,9 +22,32 @@ const SectionCard: React.FC<SectionCardProps> = ({
 	const navigate = useNavigate();
 	const isActive = section.active !== false;
 	const isTutorOnly = section.roleInSection === "TUTOR";
+	const managePath = `/tutor/assignments/section/${section.sectionId}`;
+
+	// 카드 빈 곳을 누르면 해당 수업 관리 화면으로. 카드 안 버튼·더보기 메뉴는 각자 동작만 하도록 제외
+	const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
+		const target = e.target as HTMLElement;
+		if (target.closest("button, .dropdown-container")) return;
+		navigate(managePath);
+	};
+
+	const handleCardKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+		if (e.target !== e.currentTarget) return;
+		if (e.key === "Enter" || e.key === " ") {
+			e.preventDefault();
+			navigate(managePath);
+		}
+	};
 
 	return (
-		<S.CourseCard key={section.sectionId}>
+		<S.CourseCard
+			key={section.sectionId}
+			role="link"
+			tabIndex={0}
+			aria-label={`${section.courseTitle} 관리 화면으로 이동`}
+			onClick={handleCardClick}
+			onKeyDown={handleCardKeyDown}
+		>
 			<S.CardHeader>
 				<S.CardTitle>{section.courseTitle}</S.CardTitle>
 				<S.StatusBadge $active={isActive}>
@@ -96,7 +119,7 @@ const SectionCard: React.FC<SectionCardProps> = ({
 					</S.ActionButton>
 					<S.ActionButton
 						onClick={() =>
-							navigate(`/tutor/assignments/section/${section.sectionId}`)
+							navigate(managePath)
 						}
 						title="과제 관리"
 					>
