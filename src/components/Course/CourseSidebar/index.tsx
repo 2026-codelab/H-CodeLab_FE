@@ -52,21 +52,17 @@ const CourseSidebar: React.FC<CourseSidebarProps> = ({
 	const currentSectionIdNum = hasSectionId ? Number(sectionId) : 0;
 	const isSuperAdmin = user?.role === "SUPER_ADMIN";
 	/** 현재 수업에서만: 이 수업의 교수·튜터일 때만 관리 페이지 표시 (다른 수업에서 교수여도 이 수업에서 학생이면 숨김) */
+	const isManagingCurrentSection =
+		hasSectionId && managingSectionIds.includes(currentSectionIdNum);
 	const showAdminLink =
 		!checkingManagingSections &&
 		(isSuperAdmin ||
 			(managingSectionIds.length > 0 &&
-				(!hasSectionId || managingSectionIds.includes(currentSectionIdNum))));
+				(!hasSectionId || isManagingCurrentSection)));
 
 	useEffect(() => {
 		const checkManagingSections = async () => {
 			if (!user) {
-				setManagingSectionIds([]);
-				setCheckingManagingSections(false);
-				return;
-			}
-
-			if (user.role === "SUPER_ADMIN") {
 				setManagingSectionIds([]);
 				setCheckingManagingSections(false);
 				return;
@@ -140,7 +136,10 @@ const CourseSidebar: React.FC<CourseSidebarProps> = ({
 					{
 						id: "admin",
 						label: "관리 페이지",
-						path: "/tutor",
+						// 이 수업을 관리 중이면 해당 수업 관리 화면으로 바로, 아니면(시스템 관리자 등) 관리 대시보드로
+						path: isManagingCurrentSection
+							? `/tutor/assignments/section/${currentSectionIdNum}`
+							: "/tutor",
 						icon: MdSettings,
 					},
 				]
