@@ -1,5 +1,5 @@
-import { useCallback, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import Split from "react-split";
@@ -15,9 +15,10 @@ import * as DS from "../../CodingQuiz/CodingQuizSolvePage/ProblemDescription/sty
 import * as PS from "../../../AssignmentPage/ProblemSolvePage/styles";
 import apiService from "../../../../services/APIService";
 import tokenManager from "../../../../utils/tokenManager";
+import { findPracticeLanguage, type PracticeLanguage } from "../languages";
 import * as S from "./styles";
 
-type Language = "c" | "cpp" | "java" | "python";
+type Language = PracticeLanguage;
 type PanelKey = "editor" | "stdin" | "output";
 type PanelLayout = { left: PanelKey; topRight: PanelKey; bottomRight: PanelKey };
 type Theme = "light" | "dark";
@@ -50,11 +51,12 @@ function getLanguageExtension(language: Language) {
 }
 
 export default function CodingPracticePage() {
-	const { sectionId } = useParams<{ sectionId: string }>();
+	const { sectionId, language: languageParam } = useParams<{ sectionId: string; language: string }>();
 	const navigate = useNavigate();
+	const languageOption = findPracticeLanguage(languageParam);
+	const language: Language = languageOption?.id ?? "c";
 	const [theme, setTheme] = useState<Theme>("light");
-	const [language, setLanguage] = useState<Language>("c");
-	const [code, setCode] = useState(DEFAULT_CODE.c);
+	const [code, setCode] = useState(DEFAULT_CODE[language]);
 	const [stdin, setStdin] = useState("");
 	const [runState, setRunState] = useState<RunState>({ status: "idle" });
 	const [panelLayout, setPanelLayout] = useState<PanelLayout>({
@@ -80,11 +82,18 @@ export default function CodingPracticePage() {
 		});
 	}, []);
 
-	const handleLanguageChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-		const next = e.target.value as Language;
-		setLanguage(next);
-		setCode(DEFAULT_CODE[next]);
-	}, []);
+	// URL로 다른 언어에 들어오면 같은 컴포넌트가 재사용되므로 코드/결과를 초기화
+	useEffect(() => {
+		abortRef.current?.abort();
+		setCode(DEFAULT_CODE[language]);
+		setRunState({ status: "idle" });
+	}, [language]);
+
+	useEffect(() => () => abortRef.current?.abort(), []);
+
+	const goToLanguageSelect = useCallback(() => {
+		navigate(`/sections/${sectionId}/coding-practice`);
+	}, [navigate, sectionId]);
 
 	const handleRun = useCallback(async () => {
 		if (!sectionId || runState.status === "running") return;
@@ -151,17 +160,12 @@ export default function CodingPracticePage() {
 		<ES.EditorWrapper>
 			<ES.EditorHeader>
 				<ES.EditorHeaderLeft>
-					<span>
-						solution.{language === "python" ? "py" : language === "cpp" ? "cpp" : language}
-					</span>
+					<span>{languageOption?.fileName}</span>
 				</ES.EditorHeaderLeft>
 				<ES.EditorHeaderRight>
-					<S.LanguageSelect value={language} onChange={handleLanguageChange}>
-						<option value="c">C</option>
-						<option value="cpp">C++</option>
-						<option value="java">Java</option>
-						<option value="python">Python</option>
-					</S.LanguageSelect>
+					<S.ChangeLanguageButton type="button" onClick={goToLanguageSelect}>
+						언어 변경
+					</S.ChangeLanguageButton>
 					<ES.SubmitButton
 						onClick={handleRun}
 						disabled={runState.status === "running"}
@@ -241,6 +245,10 @@ export default function CodingPracticePage() {
 		</DraggablePanel>
 	);
 
+	if (!languageOption) {
+		return <Navigate to={`/sections/${sectionId}/coding-practice`} replace />;
+	}
+
 	return (
 		<DndProvider backend={HTML5Backend}>
 			<PS.PageWrapper className={`problem-solve-page ${theme}`} $theme={theme}>
@@ -251,7 +259,11 @@ export default function CodingPracticePage() {
 								대시보드
 							</PS.BreadcrumbLink>
 							<span> › </span>
-							<PS.BreadcrumbCurrent $theme={theme}>코딩 실습</PS.BreadcrumbCurrent>
+							<PS.BreadcrumbLink type="button" onClick={goToLanguageSelect}>
+								코딩 실습
+							</PS.BreadcrumbLink>
+							<span> › </span>
+							<PS.BreadcrumbCurrent $theme={theme}>{languageOption.label}</PS.BreadcrumbCurrent>
 						</PS.Breadcrumb>
 					</PS.HeaderBreadcrumbWrap>
 					<PS.Controls>

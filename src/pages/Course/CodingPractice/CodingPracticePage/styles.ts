@@ -39,17 +39,26 @@ export const OutputPlaceholder = styled.div`
   font-size: 13px;
 `;
 
-export const LanguageSelect = styled.select`
-  padding: 6px 10px;
+export const ChangeLanguageButton = styled.button`
+  padding: 6px 12px;
   border-radius: 6px;
   border: 1px solid #30363d;
   background: #0d1117;
   color: #eff5f2;
   font-size: 13px;
+  cursor: pointer;
+
+  &:hover {
+    border-color: #58a6ff;
+  }
 
   .problem-solve-page.light & {
     background: #ffffff;
     color: #24292e;
     border: 1px solid #d0d7de;
+  }
+
+  .problem-solve-page.light &:hover {
+    border-color: #0969da;
   }
 `;
