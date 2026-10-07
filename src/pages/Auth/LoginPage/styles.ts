@@ -283,67 +283,6 @@ export const PasswordResetLink = styled.a`
   }
 `;
 
-export const SocialLoginSection = styled.div`
-  padding: 0 40px 30px;
-`;
-
-export const SocialLoginTitle = styled.h3`
-  font-size: 16px;
-  font-weight: 600;
-  color: black;
-  text-align: center;
-  margin-bottom: 20px;
-`;
-
-export const SocialLoginButtons = styled.div`
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-`;
-
-export const SocialButton = styled.button<{ color: string }>`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 16px 8px;
-  background: rgba(255, 255, 255, 0.9);
-  border: 2px solid #e5e7eb;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s;
-  color: black;
-
-  &:hover {
-    border-color: ${(props) => props.color};
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
-    background: rgba(255, 255, 255, 1);
-  }
-
-  svg, span {
-    margin: 2px 0;
-  }
-
-  span {
-    font-size: 12px;
-    font-weight: 500;
-  }
-`;
-
-export const HisNetIcon = styled.div`
-  width: 24px;
-  height: 24px;
-  background: #1E3A8A;
-  color: white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  font-size: 14px;
-`;
-
 export const FooterLinks = styled.div`
   display: flex;
   justify-content: center;

@@ -4,10 +4,7 @@ import {
 	FaLock,
 	FaEye,
 	FaEyeSlash,
-	FaGoogle,
-	FaGithub,
 } from "react-icons/fa";
-import { SiKakaotalk } from "react-icons/si";
 import type { LoginPageHookReturn } from "../hooks/useLoginPage";
 import * as S from "../styles";
 
@@ -102,45 +99,6 @@ export default function LoginPageView(d: LoginPageHookReturn) {
 								비밀번호 재설정
 							</S.PasswordResetLink>
 						</S.LoginForm>
-
-						<S.SocialLoginSection>
-							<S.SocialLoginTitle>
-								SNS 계정으로 간편하게 시작하기
-							</S.SocialLoginTitle>
-							<S.SocialLoginButtons>
-								<S.SocialButton
-									onClick={() => d.handleSocialLogin("google")}
-									color="#4285F4"
-								>
-									<FaGoogle />
-									<span>Google</span>
-								</S.SocialButton>
-
-								<S.SocialButton
-									onClick={() => d.handleSocialLogin("kakao")}
-									color="#FEE500"
-								>
-									<SiKakaotalk />
-									<span>Kakao</span>
-								</S.SocialButton>
-
-								<S.SocialButton
-									onClick={() => d.handleSocialLogin("github")}
-									color="#24292E"
-								>
-									<FaGithub />
-									<span>GitHub</span>
-								</S.SocialButton>
-
-								<S.SocialButton
-									onClick={() => d.handleSocialLogin("hisnet")}
-									color="#1E3A8A"
-								>
-									<S.HisNetIcon>H</S.HisNetIcon>
-									<span>HisNet</span>
-								</S.SocialButton>
-							</S.SocialLoginButtons>
-						</S.SocialLoginSection>
 
 						<S.FooterLinks>
 							<S.FooterLink href="#">이용약관</S.FooterLink>
