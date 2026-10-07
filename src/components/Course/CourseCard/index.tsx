@@ -24,6 +24,10 @@ interface Course {
 	active?: boolean;
 }
 
+// 이름에 이미 "교수"/"교수님"이 붙어 있으면 중복 없이 "OOO 교수님"으로 표시
+const formatInstructorName = (name?: string) =>
+	`${(name ?? "").trim().replace(/\s*교수님?$/, "")} 교수님`;
+
 interface CourseCardProps {
 	course: Course;
 	onStatusUpdate?: () => void;
@@ -162,7 +166,7 @@ const CourseCard: React.FC<CourseCardProps> = ({
 				</S.StatusTags>
 
 				<S.InstructorRow>
-					<S.Instructor>{course.instructor} 교수님</S.Instructor>
+					<S.Instructor>{formatInstructorName(course.instructor)}</S.Instructor>
 					{showEnrollButton && (
 						<S.EnrollButton
 							className="enroll-button"
