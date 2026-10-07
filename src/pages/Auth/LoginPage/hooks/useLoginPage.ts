@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import type { LoginFormData, SocialProvider } from "../types";
+import type { LoginFormData } from "../types";
 
 interface LocationState {
 	redirectTo?: string;
@@ -50,10 +50,6 @@ export function useLoginPage() {
 		[formData.email, formData.password, redirectTo, navigate],
 	);
 
-	const handleSocialLogin = useCallback((_provider: SocialProvider) => {
-		alert("이메일로 회원가입 후 이메일로 로그인해주세요.");
-	}, []);
-
 	const handleSignup = useCallback(() => {
 		navigate("/signup");
 	}, [navigate]);
@@ -70,7 +66,6 @@ export function useLoginPage() {
 		pendingEnrollmentCode,
 		handleInputChange,
 		handleSubmit,
-		handleSocialLogin,
 		handleSignup,
 		setShowPasswordToggle,
 	};
