@@ -61,6 +61,8 @@ const TutorLayout: React.FC<TutorLayoutProps> = ({
 	});
 	/** 이번 세션에서 한 번이라도 관리할 수업이 있었는지 (있었다가 0이 되면 = 교수가 튜터 제외한 경우만 리다이렉트) */
 	const hadManagingSectionsRef = useRef(false);
+	// 교수가 직접 수업을 삭제해서 목록이 줄어든 경우 (튜터 제외로 오인하지 않기 위함)
+	const sectionDeletedRef = useRef(false);
 
 	const handleCopyTutorLink = useCallback(() => {
 		const enrollmentCode = currentSection?.enrollmentCode;
@@ -140,18 +142,29 @@ const TutorLayout: React.FC<TutorLayoutProps> = ({
 
 			// 관리할 수업이 없을 때: 이전에 있었는데 지금 0이면 = 교수가 튜터에서 제외한 경우만 "튜터에서 제외됐습니다" 후 리다이렉트
 			if (transformedSections.length === 0) {
-				if (hadManagingSectionsRef.current) {
+				if (hadManagingSectionsRef.current && !sectionDeletedRef.current) {
 					navigate("/dashboard", {
 						replace: true,
 						state: { tutorRemoved: true },
 					});
 					return;
 				}
+				sectionDeletedRef.current = false;
 				setSections([]);
+				setCurrentSection(null);
+				localStorage.removeItem("tutor_lastSelectedSectionId");
 				return;
 			}
 
+			sectionDeletedRef.current = false;
 			setSections(transformedSections);
+
+			// 선택돼 있던 수업이 목록에서 없어졌으면(삭제 등) 선택을 기본 상태로 되돌림
+			const isInList = (sectionId: number) =>
+				transformedSections.some((s) => s.sectionId === sectionId);
+			setCurrentSection((prev) =>
+				prev && !isInList(prev.sectionId) ? null : prev,
+			);
 
 			// 수업 관련 URL인데 해당 수업 권한이 없으면 강의실로 보냄 (튜터 대시로 보내지 않음)
 			if (urlSectionId && isSectionPage) {
@@ -169,9 +182,16 @@ const TutorLayout: React.FC<TutorLayoutProps> = ({
 				location.pathname.includes("/section/") ||
 				location.pathname.match(/\/tutor\/(assignments|notices|users)(\/|$)/);
 
-			const lastSelectedSectionId = localStorage.getItem(
+			let lastSelectedSectionId = localStorage.getItem(
 				"tutor_lastSelectedSectionId",
 			);
+			if (
+				lastSelectedSectionId &&
+				!isInList(Number.parseInt(lastSelectedSectionId, 10))
+			) {
+				localStorage.removeItem("tutor_lastSelectedSectionId");
+				lastSelectedSectionId = null;
+			}
 
 			if (sectionIdFromUrl) {
 				const found = transformedSections.find(
@@ -234,7 +254,10 @@ const TutorLayout: React.FC<TutorLayoutProps> = ({
 	}, [fetchSections]);
 
 	useEffect(() => {
-		const handler = () => {
+		const handler = (event: Event) => {
+			if ((event as CustomEvent).detail?.deletedSectionId != null) {
+				sectionDeletedRef.current = true;
+			}
 			fetchSections();
 		};
 		window.addEventListener("tutor-sections-refresh", handler);
