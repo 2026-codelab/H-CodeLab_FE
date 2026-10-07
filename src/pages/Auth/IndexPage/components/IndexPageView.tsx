@@ -52,13 +52,15 @@ export default function IndexPageView(d: IndexPageHookReturn) {
 						<FaPencilAlt />
 						강의 관리
 					</S.Tab>
-					<S.Tab
-						active={d.activeTab === "system"}
-						onClick={d.handleSystemManagementClick}
-					>
-						<FaCog />
-						시스템 관리
-					</S.Tab>
+					{d.isSuperAdmin && (
+						<S.Tab
+							active={d.activeTab === "system"}
+							onClick={d.handleSystemManagementClick}
+						>
+							<FaCog />
+							시스템 관리
+						</S.Tab>
+					)}
 				</S.TabNavigation>
 			</S.HeroAndTabSection>
 

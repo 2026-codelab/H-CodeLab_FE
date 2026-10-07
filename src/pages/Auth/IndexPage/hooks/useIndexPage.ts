@@ -66,17 +66,10 @@ export function useIndexPage() {
 		navigate("/tutor");
 	}, [isAuthenticated, navigate]);
 
+	// 시스템 관리 탭은 SUPER_ADMIN에게만 보이므로 바로 이동
 	const handleSystemManagementClick = useCallback(() => {
-		if (!isAuthenticated) {
-			navigate("/login", { state: { redirectTo: "/super-admin" } });
-			return;
-		}
-		if (isSuperAdmin) {
-			navigate("/super-admin");
-		} else {
-			setActiveTab("system");
-		}
-	}, [isAuthenticated, isSuperAdmin, navigate]);
+		navigate("/super-admin");
+	}, [navigate]);
 
 	return {
 		navigate,
