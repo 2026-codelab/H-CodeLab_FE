@@ -55,18 +55,7 @@ export const LogoText = styled.h1`
 
 export const HeaderLinks = styled.div`
   display: flex;
-  gap: 24px;
+  gap: 12px;
   align-items: center;
   margin-right: -50px;
-`;
-
-export const HeaderLink = styled.span`
-  color: #6b7280;
-  text-decoration: none;
-  font-size: 14px;
-  cursor: pointer;
-
-  &:hover {
-    color: #1f2937;
-  }
 `;

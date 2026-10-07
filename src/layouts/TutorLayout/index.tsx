@@ -2,7 +2,6 @@ import type React from "react";
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import TutorHeader from "../../components/Tutor/TutorHeader";
-import TutorNotificationPanel from "../../components/Tutor/TutorNotificationPanel";
 import APIService from "../../services/APIService";
 import { getSemesterLabel } from "../../pages/TutorPage/Dashboard/hooks/useDashboard";
 import {
@@ -751,8 +750,6 @@ const TutorLayout: React.FC<TutorLayoutProps> = ({
 			<S.Main $sidebarCollapsed={sidebarCollapsed}>
 				<S.Content>{children}</S.Content>
 			</S.Main>
-
-			<TutorNotificationPanel />
 
 			{showSectionModal && (
 				<S.SectionModalOverlay

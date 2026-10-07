@@ -1,4 +1,5 @@
 import { atom } from "recoil";
+import type { NotificationItem } from "../utils/notificationUtils";
 
 interface User {
 	id: number;
@@ -46,4 +47,27 @@ export const onboardingState = atom<OnboardingState>({
 export const sidebarCollapsedState = atom<boolean>({
 	key: "sidebarCollapsedState",
 	default: false,
+});
+
+/**
+ * 상단바 알림 상태 (페이지 이동으로 상단바가 다시 마운트돼도 유지)
+ * userId: 이 데이터를 불러온 사용자 — 다른 사용자로 바뀌면 다시 불러옴
+ */
+export interface NotificationStoreState {
+	userId: number | null;
+	items: NotificationItem[];
+	unreadCount: number;
+	loaded: boolean;
+	loading: boolean;
+}
+
+export const notificationState = atom<NotificationStoreState>({
+	key: "notificationState",
+	default: {
+		userId: null,
+		items: [],
+		unreadCount: 0,
+		loaded: false,
+		loading: false,
+	},
 });

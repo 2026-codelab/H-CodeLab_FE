@@ -138,6 +138,7 @@ export const CourseListDropdownLink = styled.button`
 export const UserSection = styled.div`
   display: flex;
   align-items: center;
+  gap: 0.75rem;
 `;
 
 export const ToggleButton = styled.button`
@@ -166,15 +167,4 @@ export const CourseName = styled.span`
   font-weight: 600;
   color: #000000;
   margin: 0;
-`;
-
-export const UserInfo = styled.span`
-  color: #000000;
-  font-size: 16px;
-  font-weight: 500;
-`;
-
-export const UserRole = styled.span`
-  color: #667eea;
-  font-weight: 600;
 `;

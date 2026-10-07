@@ -2,12 +2,15 @@ import { useRecoilState } from 'recoil';
 import { authState } from '../recoil/atoms';
 import APIService from '../services/APIService';
 import tokenManager from '../utils/tokenManager';
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
+
+// 인증 상태 복원은 앱 전체에서 한 번만 실행.
+// (컴포넌트마다 useRef로 막으면 useAuth를 쓰는 컴포넌트가 새로 마운트될 때마다 다시 복원되어,
+//  user 객체가 바뀌고 → 페이지가 다시 로딩되고 → 컴포넌트가 다시 마운트되는 무한 반복이 생김)
+let authRestoreStarted = false;
 
 export const useAuth = () => {
   const [auth, setAuth] = useRecoilState(authState);
-  // 동일 훅이 여러 컴포넌트에서 동시에 마운트되어도 restoreAuth는 한 번만 실행
-  const restored = useRef(false);
 
   // 토큰 만료/갱신 콜백 등록 (tokenManager 싱글턴에 세팅)
   useEffect(() => {
@@ -39,10 +42,10 @@ export const useAuth = () => {
 
   // 페이지 최초 로드 시 인증 상태 복원
   // AuthInitializer(App.tsx)가 최상단에서 이 훅을 마운트하므로 한 번만 실행됨.
-  // Header/Sidebar 등에서 추가로 useAuth()를 쓰더라도 restored ref로 중복 실행 방지.
+  // Header/Sidebar 등에서 추가로 useAuth()를 쓰더라도 authRestoreStarted로 중복 실행 방지.
   useEffect(() => {
-    if (restored.current) return;
-    restored.current = true;
+    if (authRestoreStarted) return;
+    authRestoreStarted = true;
 
     const restoreAuthState = async () => {
       try {

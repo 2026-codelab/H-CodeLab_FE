@@ -3,6 +3,9 @@ import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../hooks/useAuth";
 import APIService from "../../../services/APIService";
+import TutorNotificationPanel from "../../Tutor/TutorNotificationPanel";
+import UserMenu from "../UserMenu";
+import { LoginButton } from "../UserMenu/styles";
 import * as S from "./styles";
 
 const Navbar: React.FC = () => {
@@ -69,11 +72,18 @@ const Navbar: React.FC = () => {
 				</S.NavLeft>
 
 				<S.NavRight>
-					{isAuthenticated && (
+					{isAuthenticated ? (
 						<>
-							<S.UserInfo>{user?.name || user?.email}</S.UserInfo>
-							<S.LogoutButton onClick={handleLogout}>로그아웃</S.LogoutButton>
+							<TutorNotificationPanel />
+							<UserMenu
+								roleLabel={isSuperAdmin ? "시스템 관리자" : null}
+								onLogout={handleLogout}
+							/>
 						</>
+					) : (
+						<LoginButton type="button" onClick={() => navigate("/login")}>
+							로그인
+						</LoginButton>
 					)}
 				</S.NavRight>
 			</S.NavbarWrapper>
