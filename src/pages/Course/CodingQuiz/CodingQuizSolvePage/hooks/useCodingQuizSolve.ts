@@ -7,6 +7,7 @@ import indexedDBManager from "../../../../../utils/IndexedDBManager";
 import { fetchEventSource } from "@microsoft/fetch-event-source";
 import tokenManager from "../../../../../utils/tokenManager";
 import { getDefaultCode, resultMapping } from "../utils";
+import { toSectionLanguage } from "../../../../../utils/sectionLanguage";
 import type {
 	QuizInfo,
 	SectionInfo,
@@ -27,9 +28,10 @@ export function useCodingQuizSolve() {
 	const [userRole, setUserRole] = useState<string | null>(null);
 	const timeUpHandled = useRef(false);
 
-	const [language, setLanguage] = useState("c");
+	// 수업 언어로만 풀이·제출 (섹션 정보를 불러오기 전에는 비워 두고, 코드 로드도 대기)
+	const [language, setLanguage] = useState("");
 	const [theme, setTheme] = useState<"light" | "dark">("light");
-	const [code, setCode] = useState(() => getDefaultCode("c"));
+	const [code, setCode] = useState("");
 	const [submissionResult, setSubmissionResult] =
 		useState<SubmissionResult | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
@@ -256,6 +258,7 @@ export function useCodingQuizSolve() {
 				setQuizInfo(quizInfoData);
 				setProblems(problemsList);
 				setSectionInfo(sectionData);
+				setLanguage(toSectionLanguage(sectionData?.language));
 				setCurrentProblem(problemData);
 				setSelectedProblemId(defaultProblemId);
 			} catch (error) {
@@ -264,6 +267,7 @@ export function useCodingQuizSolve() {
 					title: "오류",
 					description: "퀴즈를 불러오는데 실패했습니다.",
 				});
+				setLanguage((prev) => prev || toSectionLanguage(null));
 			} finally {
 				setIsLoading(false);
 			}

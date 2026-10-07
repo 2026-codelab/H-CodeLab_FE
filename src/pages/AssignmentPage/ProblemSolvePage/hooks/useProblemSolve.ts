@@ -7,6 +7,7 @@ import apiService from "../../../../services/APIService";
 import tokenManager from "../../../../utils/tokenManager";
 import indexedDBManager from "../../../../utils/IndexedDBManager";
 import { getDefaultCode } from "../utils/getDefaultCode";
+import { toSectionLanguage } from "../../../../utils/sectionLanguage";
 import {
 	RESULT_MAPPING_JUDGE,
 	RESULT_MAPPING_OUTPUT,
@@ -35,9 +36,10 @@ export function useProblemSolve() {
 		sectionId: string;
 	}>();
 
-	const [language] = useState("c");
+	// 수업 언어로만 풀이·제출 (섹션 정보를 불러오기 전에는 비워 두고, 코드 로드도 대기)
+	const [language, setLanguage] = useState("");
 	const [theme, setTheme] = useState<"light" | "dark">("light");
-	const [code, setCode] = useState(() => getDefaultCode("c"));
+	const [code, setCode] = useState("");
 	const [submissionResult, setSubmissionResult] =
 		useState<SubmissionResultState | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
@@ -225,6 +227,7 @@ export function useProblemSolve() {
 					.sort((a, b) => a.order - b.order);
 				setCurrentProblem(problemData as Problem);
 				setSectionInfo(sectionData);
+				setLanguage(toSectionLanguage(sectionData?.language));
 				setAssignmentInfo(assignmentData);
 				setProblems(assignmentProblems);
 
@@ -270,6 +273,7 @@ export function useProblemSolve() {
 					title: "오류",
 					description: "문제를 불러오는데 실패했습니다.",
 				});
+				setLanguage((prev) => prev || toSectionLanguage(null));
 			} finally {
 				setIsLoading(false);
 			}

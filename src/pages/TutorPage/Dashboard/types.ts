@@ -39,6 +39,7 @@ export interface DashboardFormData {
 	description: string;
 	year: number | string;
 	semester: string;
+	language: string;
 }
 
 export interface DashboardCopyFormData {
@@ -47,6 +48,8 @@ export interface DashboardCopyFormData {
 	description: string;
 	year: number | string;
 	semester: string;
+	/** 빈 값이면 원본 수업과 같은 언어 */
+	language: string;
 	copyNotices: boolean;
 	copyAssignments: boolean;
 	selectedNoticeIds: number[];
