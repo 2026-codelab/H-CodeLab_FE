@@ -266,11 +266,17 @@ export const CourseCard = styled.div`
   overflow: visible;
   word-wrap: break-word;
   overflow-wrap: break-word;
+  cursor: pointer;
 
   &:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
     border-color: #667eea;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #667eea;
+    outline-offset: 2px;
   }
 `;
 
