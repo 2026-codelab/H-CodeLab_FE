@@ -28,6 +28,8 @@ import QuestionDetailPage from "./pages/Course/Community/QuestionDetailPage";
 import QuestionEditPage from "./pages/Course/Community/QuestionEditPage";
 import CodingQuizPage from "./pages/Course/CodingQuiz/CodingQuizPage";
 import CodingQuizSolvePage from "./pages/Course/CodingQuiz/CodingQuizSolvePage";
+import CodingPracticePage from "./pages/Course/CodingPractice/CodingPracticePage";
+import CodingPracticeLanguagePage from "./pages/Course/CodingPractice/CodingPracticeLanguagePage";
 
 // 과제
 
@@ -179,6 +181,14 @@ const App: React.FC = () => {
 								<CodingQuizSolvePage />
 							</AuthRoute>
 						}
+					/>
+					<Route
+						path="/sections/:sectionId/coding-practice"
+						element={<CodingPracticeLanguagePage />}
+					/>
+					<Route
+						path="/sections/:sectionId/coding-practice/:language"
+						element={<CodingPracticePage />}
 					/>
 					<Route
 						path="/sections/:sectionId/alarm"

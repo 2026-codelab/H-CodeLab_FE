@@ -276,6 +276,31 @@ class APIService {
 	}
 
 	/**
+	 * 코딩 실습(과제/문제와 무관한 자유 실행) 제출: DOMjudge에만 제출 후 sessionKey를 즉시 반환.
+	 * 채점(AC/WA)은 하지 않고 stdout/stderr/컴파일에러만 그대로 돌려준다.
+	 * 반환된 sessionKey+domjudgeProblemId로 SSE /run/stream/{sessionKey} 에 연결해 output 수신.
+	 */
+	async runSubmit(
+		sectionId: number | string,
+		code: string,
+		language: string,
+		stdin: string,
+	): Promise<{ sessionKey: string; domjudgeProblemId: string }> {
+		return await this.request("/run/submit", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({
+				sectionId: Number.parseInt(String(sectionId)),
+				language,
+				code,
+				stdin,
+			}),
+		});
+	}
+
+	/**
 	 * 기존 API (하위 호환): 서버 측 폴링으로 채점 결과까지 한 번에 반환.
 	 */
 	async submitQuizCode(
