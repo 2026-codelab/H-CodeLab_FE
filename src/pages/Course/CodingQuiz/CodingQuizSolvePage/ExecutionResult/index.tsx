@@ -2,6 +2,7 @@ import type React from "react";
 import { useState, useEffect } from "react";
 import LoadingSpinner from "../../../../../components/UI/LoadingSpinner";
 import HintBox from "./HintBox";
+import CompileErrorHint from "./CompileErrorHint";
 import * as S from "./styles";
 
 interface Testcase {
@@ -27,6 +28,7 @@ interface SubmissionResult {
 	submissionId?: number | string;
 	language?: string;
 	submittedAt?: string;
+	code?: string;
 	result?: string;
 	outputList?: Testcase[];
 	output_compile?: string;
@@ -54,6 +56,8 @@ interface ExecutionResultProps {
 	totalTestcaseCount?: number | null;
 	/** 과제 풀이 화면에서만 true로 전달 — 코딩테스트(퀴즈)에서는 힌트를 보여주지 않음 */
 	enableHint?: boolean;
+	/** enableHint가 true일 때 필수. 힌트 사용 횟수 집계 키. */
+	problemId?: number;
 }
 
 const RESULT_COLOR: Record<string, string> = {
@@ -74,6 +78,7 @@ const ExecutionResult: React.FC<ExecutionResultProps> = ({
 	onResetTestcaseResults,
 	totalTestcaseCount,
 	enableHint = false,
+	problemId,
 }) => {
 	const [selectedTestcase, setSelectedTestcase] = useState<number | null>(null);
 
@@ -268,6 +273,10 @@ const ExecutionResult: React.FC<ExecutionResultProps> = ({
 	const showProgress = isSubmitting && (doneCount > 0 || totalCount !== null);
 	const progressPct = totalCount ? Math.round((doneCount / totalCount) * 100) : null;
 
+	// 힌트는 "테스트하기"(type: "output") 결과에서만 보여준다 — 제출하기(채점용)는 테스트케이스
+	// 세부 diff를 학생에게 보여주지 않는데, 힌트가 그걸 몰래 쓰는 건 일관성이 없기 때문.
+	const showHint = enableHint && problemId != null && submissionResult?.type === "output";
+
 	return (
 		<S.ResultArea>
 			<div>
@@ -406,6 +415,14 @@ const ExecutionResult: React.FC<ExecutionResultProps> = ({
 										<pre>{submissionResult.output_compile}</pre>
 									</S.Content>
 								</S.TestcaseSection>
+								{showHint && submissionResult.code && (
+									<CompileErrorHint
+										key={`ce-${problemId}-${submissionResult.submittedAt}`}
+										problemId={problemId as number}
+										code={submissionResult.code}
+										outputCompile={submissionResult.output_compile}
+									/>
+								)}
 							</S.CompileOutputSection>
 						)}
 
@@ -429,6 +446,24 @@ const ExecutionResult: React.FC<ExecutionResultProps> = ({
 													` | 획득 점수: ${submissionResult.score!.toFixed(1)}/${submissionResult.points}점`}
 											</strong>
 										</S.TestcasesHeader>
+									{showHint && submissionResult.code && p < t && (
+										<HintBox
+											key={`hint-${problemId}-${submissionResult.submittedAt}`}
+											problemId={problemId as number}
+											code={submissionResult.code}
+											failingTestcases={submissionResult.outputList
+												.filter((tc) => tc.result !== "correct")
+												.map((tc) => ({
+													testcaseRank: tc.testcase_rank,
+													result: tc.result,
+													testcaseInput: tc.testcase_input,
+													expectedOutput: tc.expected_output,
+													output: tc.output,
+													outputError: tc.output_error,
+													outputDiff: tc.output_diff,
+												}))}
+										/>
+									)}
 
 										<S.TestcaseButtons>
 											{submissionResult.outputList.map((testcase, index) => (
@@ -532,12 +567,6 @@ const ExecutionResult: React.FC<ExecutionResultProps> = ({
 									</S.TestcasesSection>
 								);
 							})()}
-						{enableHint &&
-							submissionResult.result &&
-							submissionResult.result !== "AC" &&
-							submissionResult.submissionId != null && (
-								<HintBox submissionId={Number(submissionResult.submissionId)} />
-							)}
 					</>
 				) : (
 					<div style={{ opacity: 0.6 }}>제출 후 결과가 여기에 표시됩니다.</div>

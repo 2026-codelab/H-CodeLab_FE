@@ -169,6 +169,7 @@ const ProblemSolveView: React.FC<ProblemSolveViewProps> = (props) => {
 				onResetTestcaseResults={resetTestcaseResults}
 				totalTestcaseCount={totalTestcaseCount}
 				enableHint
+				problemId={currentProblem.id}
 			/>
 		),
 	};

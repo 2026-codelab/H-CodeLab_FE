@@ -11,8 +11,21 @@ interface HintResponse {
 	usedFallback: boolean;
 }
 
+interface FailingTestcase {
+	testcaseRank: number;
+	result: string | null;
+	testcaseInput?: string;
+	expectedOutput?: string;
+	output?: string;
+	outputError?: string;
+	outputDiff?: string;
+}
+
 interface HintBoxProps {
-	submissionId: number;
+	problemId: number;
+	code: string;
+	/** 실패한(correct가 아닌) 테스트케이스 전체 — 한 번의 테스트 실행 결과를 통합해서 힌트 하나를 만든다. */
+	failingTestcases: FailingTestcase[];
 }
 
 const TIER_LABEL: Record<HintResponse["tier"], string> = {
@@ -22,10 +35,11 @@ const TIER_LABEL: Record<HintResponse["tier"], string> = {
 };
 
 /**
- * 제출 결과가 AC가 아닐 때 보이는 "힌트" 버튼.
- * 문제당 최대 3회까지만 쓸 수 있고, 남은 횟수는 페이지가 열릴 때 서버에서 조회해 정확히 표시한다.
+ * "테스트하기" 결과 중 실패한 테스트케이스가 하나 이상 있을 때 보이는 통합 "힌트" 버튼.
+ * 테스트케이스별로 따로 받지 않고, 코드 + 실패한 케이스 전체를 한 번에 보내 공통 원인 힌트 하나를 받는다.
+ * 문제당 최대 3회까지만 쓸 수 있고, 남은 횟수는 버튼이 그려질 때 서버에서 조회해 정확히 표시한다.
  */
-const HintBox: React.FC<HintBoxProps> = ({ submissionId }) => {
+const HintBox: React.FC<HintBoxProps> = ({ problemId, code, failingTestcases }) => {
 	const [remainingUses, setRemainingUses] = useState<number | null>(null);
 	const [maxUses, setMaxUses] = useState<number>(3);
 	const [hint, setHint] = useState<HintResponse | null>(null);
@@ -35,12 +49,10 @@ const HintBox: React.FC<HintBoxProps> = ({ submissionId }) => {
 
 	useEffect(() => {
 		let cancelled = false;
-		setHint(null);
-		setError(null);
 		setIsLoadingUsage(true);
 
 		apiService
-			.getHintUsage(submissionId)
+			.getHintUsage(problemId)
 			.then((res) => {
 				if (cancelled) return;
 				setRemainingUses(res.remainingUses);
@@ -58,14 +70,17 @@ const HintBox: React.FC<HintBoxProps> = ({ submissionId }) => {
 		return () => {
 			cancelled = true;
 		};
-	}, [submissionId]);
+	}, [problemId]);
 
 	const handleRequestHint = async () => {
-		if (isGenerating || remainingUses === 0) return;
+		if (isGenerating || remainingUses === 0 || failingTestcases.length === 0) return;
 		setIsGenerating(true);
 		setError(null);
 		try {
-			const res: HintResponse = await apiService.requestHint(submissionId);
+			const res: HintResponse = await apiService.requestHint(problemId, {
+				code,
+				testcases: failingTestcases,
+			});
 			setHint(res);
 			setRemainingUses(res.remainingUses);
 		} catch (e) {
@@ -75,7 +90,7 @@ const HintBox: React.FC<HintBoxProps> = ({ submissionId }) => {
 		}
 	};
 
-	const isDisabled = isGenerating || isLoadingUsage || remainingUses === 0;
+	const isDisabled = isGenerating || isLoadingUsage || remainingUses === 0 || failingTestcases.length === 0;
 
 	return (
 		<S.HintSection>
