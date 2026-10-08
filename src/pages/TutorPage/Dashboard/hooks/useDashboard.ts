@@ -307,6 +307,12 @@ export function useDashboard() {
 			await APIService.deleteSection(sectionId);
 			alert("분반이 삭제되었습니다.");
 			fetchSections();
+			// 사이드바 수업 목록·선택도 갱신 (삭제된 수업이 선택돼 있었으면 선택 해제)
+			window.dispatchEvent(
+				new CustomEvent("tutor-sections-refresh", {
+					detail: { deletedSectionId: sectionId },
+				}),
+			);
 		} catch (err: unknown) {
 			console.error("분반 삭제 실패:", err);
 			alert((err as Error).message || "분반 삭제에 실패했습니다.");
