@@ -623,3 +623,71 @@ export const DiffActual = styled.span`
     color: #dc3545;
   }
 `;
+
+export const HintSection = styled.div`
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #30363d;
+  flex-shrink: 0;
+
+  .problem-solve-page.light & {
+    border-top-color: #dee2e6;
+  }
+`;
+
+export const HintButton = styled.button<{ $disabled?: boolean }>`
+  padding: 8px 16px;
+  border: 2px solid #58a6ff;
+  border-radius: 6px;
+  background-color: ${(props) => (props.$disabled ? "transparent" : "rgba(88, 166, 255, 0.15)")};
+  color: #58a6ff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: ${(props) => (props.$disabled ? "not-allowed" : "pointer")};
+  opacity: ${(props) => (props.$disabled ? 0.4 : 1)};
+  transition: all 0.2s ease;
+
+  &:hover {
+    background-color: ${(props) => (props.$disabled ? "transparent" : "rgba(88, 166, 255, 0.3)")};
+  }
+`;
+
+export const HintRemainingLabel = styled.span`
+  margin-left: 10px;
+  font-size: 12px;
+  color: #8b949e;
+
+  .problem-solve-page.light & {
+    color: #6c757d;
+  }
+`;
+
+export const HintCard = styled.div`
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background-color: rgba(88, 166, 255, 0.1);
+  border: 1px solid rgba(88, 166, 255, 0.3);
+  color: #c9d1d9;
+  font-size: 13px;
+  line-height: 1.6;
+
+  .problem-solve-page.light & {
+    background-color: rgba(88, 166, 255, 0.08);
+    color: #24292f;
+  }
+`;
+
+export const HintCardLabel = styled.div`
+  font-size: 11px;
+  font-weight: 700;
+  color: #58a6ff;
+  margin-bottom: 6px;
+  letter-spacing: 0.02em;
+`;
+
+export const HintError = styled.div`
+  margin-top: 10px;
+  font-size: 12px;
+  color: #f85149;
+`;

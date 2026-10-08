@@ -231,6 +231,20 @@ class APIService {
 		return response || null;
 	}
 
+	/** 힌트 버튼을 소모하지 않고 남은 사용 횟수만 조회 (버튼 초기 표시/새로고침용). */
+	async getHintUsage(submissionDbId: number): Promise<any> {
+		return await this.request(`/submissions/${submissionDbId}/hint/usage`, {
+			method: "GET",
+		});
+	}
+
+	/** 학생이 "힌트" 버튼을 눌렀을 때 호출. 문제당 최대 3회 제한(초과 시 HINT_LIMIT_EXCEEDED 에러). */
+	async requestHint(submissionDbId: number): Promise<any> {
+		return await this.request(`/submissions/${submissionDbId}/hint`, {
+			method: "POST",
+		});
+	}
+
 	async submitCodeAndGetOutput(
 		sectionId: number | string,
 		problemId: number | string,

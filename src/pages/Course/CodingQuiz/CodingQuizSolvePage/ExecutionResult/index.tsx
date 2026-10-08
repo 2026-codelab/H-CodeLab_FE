@@ -1,6 +1,7 @@
 import type React from "react";
 import { useState, useEffect } from "react";
 import LoadingSpinner from "../../../../../components/UI/LoadingSpinner";
+import HintBox from "./HintBox";
 import * as S from "./styles";
 
 interface Testcase {
@@ -51,6 +52,8 @@ interface ExecutionResultProps {
 	testcaseResults?: TestcaseProgress[] | null;
 	onResetTestcaseResults?: () => void;
 	totalTestcaseCount?: number | null;
+	/** 과제 풀이 화면에서만 true로 전달 — 코딩테스트(퀴즈)에서는 힌트를 보여주지 않음 */
+	enableHint?: boolean;
 }
 
 const RESULT_COLOR: Record<string, string> = {
@@ -70,6 +73,7 @@ const ExecutionResult: React.FC<ExecutionResultProps> = ({
 	testcaseResults,
 	onResetTestcaseResults,
 	totalTestcaseCount,
+	enableHint = false,
 }) => {
 	const [selectedTestcase, setSelectedTestcase] = useState<number | null>(null);
 
@@ -528,6 +532,12 @@ const ExecutionResult: React.FC<ExecutionResultProps> = ({
 									</S.TestcasesSection>
 								);
 							})()}
+						{enableHint &&
+							submissionResult.result &&
+							submissionResult.result !== "AC" &&
+							submissionResult.submissionId != null && (
+								<HintBox submissionId={Number(submissionResult.submissionId)} />
+							)}
 					</>
 				) : (
 					<div style={{ opacity: 0.6 }}>제출 후 결과가 여기에 표시됩니다.</div>
