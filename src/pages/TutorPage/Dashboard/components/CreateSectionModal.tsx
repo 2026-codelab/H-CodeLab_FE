@@ -3,6 +3,7 @@ import { useState } from "react";
 import * as S from "../styles";
 import type { DashboardFormData } from "../types";
 import {
+	LANGUAGE_OPTIONS,
 	PAST_SEMESTER_MSG,
 	SEMESTER_OPTIONS,
 	adjustSemesterForYear,
@@ -151,6 +152,25 @@ const CreateSectionModal: React.FC<CreateSectionModalProps> = ({
 							</S.FormSelect>
 						</S.FormGroup>
 					</S.FormRow>
+					<S.FormGroup>
+						<label htmlFor="create-section-language">사용 언어 *</label>
+						<S.FormSelect
+							id="create-section-language"
+							value={formData.language}
+							onChange={(e) =>
+								setFormData((prev) => ({ ...prev, language: e.target.value }))
+							}
+						>
+							{LANGUAGE_OPTIONS.map((option) => (
+								<option key={option.value} value={option.value}>
+									{option.label}
+								</option>
+							))}
+						</S.FormSelect>
+						<S.FormHint>
+							과제·코딩테스트는 이 언어로만 풀 수 있어요. 수업을 만든 뒤에는 바꿀 수 없어요.
+						</S.FormHint>
+					</S.FormGroup>
 				</S.ModalBody>
 				<S.ModalFooter>
 					<S.BtnCancel onClick={onClose}>취소</S.BtnCancel>

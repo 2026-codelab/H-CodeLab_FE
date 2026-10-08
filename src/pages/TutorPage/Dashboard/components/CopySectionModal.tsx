@@ -1,6 +1,7 @@
 import type React from "react";
 import * as S from "../styles";
 import {
+	LANGUAGE_OPTIONS,
 	PAST_SEMESTER_MSG,
 	SEMESTER_OPTIONS,
 	adjustSemesterForYear,
@@ -251,6 +252,29 @@ const CopySectionModal: React.FC<CopySectionModalProps> = (props) => {
 									</S.FormSelect>
 								</S.FormGroup>
 							</S.FormRow>
+							<S.FormGroup>
+								<label htmlFor="copy-language">사용 언어 *</label>
+								<S.FormSelect
+									id="copy-language"
+									value={copyFormData.language}
+									onChange={(e) =>
+										setCopyFormData((prev) => ({
+											...prev,
+											language: e.target.value,
+										}))
+									}
+								>
+									<option value="">원본 수업과 같은 언어</option>
+									{LANGUAGE_OPTIONS.map((option) => (
+										<option key={option.value} value={option.value}>
+											{option.label}
+										</option>
+									))}
+								</S.FormSelect>
+								<S.FormHint>
+									과제·코딩테스트는 이 언어로만 풀 수 있어요. 수업을 만든 뒤에는 바꿀 수 없어요.
+								</S.FormHint>
+							</S.FormGroup>
 							{showPastSemester && (
 								<S.RequiredMessage role="alert">
 									{PAST_SEMESTER_MSG}

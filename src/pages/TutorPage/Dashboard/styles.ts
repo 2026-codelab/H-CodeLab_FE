@@ -686,6 +686,12 @@ export const FormSelect = styled.select`
   }
 `;
 
+export const FormHint = styled.p`
+  margin: 0.5rem 0 0;
+  font-size: 0.8rem;
+  color: #6b7280;
+`;
+
 export const FormRow = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr;

@@ -16,6 +16,7 @@ const createInitialFormData = (): DashboardFormData => {
 		description: "",
 		year: current.year,
 		semester: current.semester,
+		language: "c",
 	};
 };
 
@@ -27,6 +28,7 @@ const createInitialCopyFormData = (): DashboardCopyFormData => {
 		description: "",
 		year: current.year,
 		semester: current.semester,
+		language: "",
 		copyNotices: true,
 		copyAssignments: true,
 		selectedNoticeIds: [],
@@ -37,6 +39,14 @@ const createInitialCopyFormData = (): DashboardCopyFormData => {
 		problemEdits: {},
 	};
 };
+
+/** 수업 언어 (수업 생성·복사 때만 선택, 과제·코딩테스트는 이 언어로만 풀이) */
+export const LANGUAGE_OPTIONS = [
+	{ value: "c", label: "C" },
+	{ value: "cpp", label: "C++" },
+	{ value: "java", label: "Java" },
+	{ value: "python", label: "Python" },
+];
 
 export const SEMESTER_OPTIONS = [
 	"SPRING",
@@ -164,6 +174,7 @@ export function useCreateSection(onCreated?: () => void | Promise<void>) {
 				sectionNumber: null,
 				year: Number.parseInt(String(formData.year)),
 				semester: formData.semester,
+				language: formData.language,
 			});
 			alert("수업이 성공적으로 생성되었습니다!");
 			setShowCreateModal(false);
@@ -539,6 +550,7 @@ export function useDashboard() {
 				copyFormData.noticeEdits,
 				copyFormData.assignmentEdits,
 				copyFormData.problemEdits,
+				copyFormData.language,
 			);
 			if (response.success) {
 				alert("수업이 성공적으로 복사되었습니다!");

@@ -583,6 +583,7 @@ class APIService {
 		noticeEdits: any,
 		assignmentEdits: any,
 		problemEdits: any,
+		language?: string,
 	): Promise<any> {
 		return await this.request(`/sections/${sectionId}/copy`, {
 			method: "POST",
@@ -603,6 +604,8 @@ class APIService {
 				noticeEdits: noticeEdits || {},
 				assignmentEdits: assignmentEdits || {},
 				problemEdits: problemEdits || {},
+				// 빈 값이면 BE가 원본 수업 언어를 그대로 사용
+				language: language || null,
 			}),
 		});
 	}
