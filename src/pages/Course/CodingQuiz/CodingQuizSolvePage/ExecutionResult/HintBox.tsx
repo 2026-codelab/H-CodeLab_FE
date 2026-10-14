@@ -7,7 +7,7 @@ interface HintResponse {
 	hint: string;
 	category: string;
 	tier: "SOCRATIC" | "MEDIUM" | "DIRECT";
-	remainingUses: number;
+	usedCount: number;
 	usedFallback: boolean;
 }
 
@@ -37,11 +37,10 @@ const TIER_LABEL: Record<HintResponse["tier"], string> = {
 /**
  * "테스트하기" 결과 중 실패한 테스트케이스가 하나 이상 있을 때 보이는 통합 "힌트" 버튼.
  * 테스트케이스별로 따로 받지 않고, 코드 + 실패한 케이스 전체를 한 번에 보내 공통 원인 힌트 하나를 받는다.
- * 문제당 최대 3회까지만 쓸 수 있고, 남은 횟수는 버튼이 그려질 때 서버에서 조회해 정확히 표시한다.
+ * 사용 횟수 제한은 없고, 지금까지 사용한 횟수만 참고용으로 표시한다.
  */
 const HintBox: React.FC<HintBoxProps> = ({ problemId, code, failingTestcases }) => {
-	const [remainingUses, setRemainingUses] = useState<number | null>(null);
-	const [maxUses, setMaxUses] = useState<number>(3);
+	const [usedCount, setUsedCount] = useState<number | null>(null);
 	const [hint, setHint] = useState<HintResponse | null>(null);
 	const [isLoadingUsage, setIsLoadingUsage] = useState(true);
 	const [isGenerating, setIsGenerating] = useState(false);
@@ -55,13 +54,11 @@ const HintBox: React.FC<HintBoxProps> = ({ problemId, code, failingTestcases }) 
 			.getHintUsage(problemId)
 			.then((res) => {
 				if (cancelled) return;
-				setRemainingUses(res.remainingUses);
-				setMaxUses(res.maxUses);
+				setUsedCount(res.usedCount);
 			})
 			.catch(() => {
 				if (cancelled) return;
-				// 조회 실패 시에도 버튼은 눌러볼 수 있게 두고, 실제 제한은 서버가 다시 검증함
-				setRemainingUses(null);
+				setUsedCount(null);
 			})
 			.finally(() => {
 				if (!cancelled) setIsLoadingUsage(false);
@@ -73,7 +70,7 @@ const HintBox: React.FC<HintBoxProps> = ({ problemId, code, failingTestcases }) 
 	}, [problemId]);
 
 	const handleRequestHint = async () => {
-		if (isGenerating || remainingUses === 0 || failingTestcases.length === 0) return;
+		if (isGenerating || failingTestcases.length === 0) return;
 		setIsGenerating(true);
 		setError(null);
 		try {
@@ -82,7 +79,7 @@ const HintBox: React.FC<HintBoxProps> = ({ problemId, code, failingTestcases }) 
 				testcases: failingTestcases,
 			});
 			setHint(res);
-			setRemainingUses(res.remainingUses);
+			setUsedCount(res.usedCount);
 		} catch (e) {
 			setError(e instanceof Error ? e.message : "힌트를 가져오지 못했습니다.");
 		} finally {
@@ -90,18 +87,14 @@ const HintBox: React.FC<HintBoxProps> = ({ problemId, code, failingTestcases }) 
 		}
 	};
 
-	const isDisabled = isGenerating || isLoadingUsage || remainingUses === 0 || failingTestcases.length === 0;
+	const isDisabled = isGenerating || isLoadingUsage || failingTestcases.length === 0;
 
 	return (
 		<S.HintSection>
 			<S.HintButton type="button" $disabled={isDisabled} disabled={isDisabled} onClick={handleRequestHint}>
 				{isGenerating ? "힌트 생성 중..." : "힌트 보기"}
 			</S.HintButton>
-			{remainingUses !== null && (
-				<S.HintRemainingLabel>
-					남은 힌트: {remainingUses}/{maxUses}
-				</S.HintRemainingLabel>
-			)}
+			{usedCount !== null && <S.HintRemainingLabel>사용한 힌트: {usedCount}회</S.HintRemainingLabel>}
 
 			{error && <S.HintError>{error}</S.HintError>}
 

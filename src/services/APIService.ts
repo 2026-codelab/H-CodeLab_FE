@@ -239,8 +239,7 @@ class APIService {
 	}
 
 	/**
-	 * "테스트하기"에서 학생이 선택한 테스트케이스에 대한 힌트 요청.
-	 * 문제당 최대 3회 제한(초과 시 HINT_LIMIT_EXCEEDED 에러).
+	 * "테스트하기"에서 학생이 선택한 테스트케이스에 대한 힌트 요청. 사용 횟수 제한 없음.
 	 */
 	async requestHint(problemId: number, testcaseContext: unknown): Promise<any> {
 		return await this.request(`/problems/${problemId}/hint`, {
