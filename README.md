@@ -55,7 +55,9 @@
 - 2025.09 ~ 진행 중
 
 ## 배포 주소
-- 서비스 주소: [`https://hcl.walab.info`](https://hcl.walab.info)
+- 서비스 주소: [`http://ai.walab.info`](http://ai.walab.info)
+
+> HTTPS 적용 후 주소가 바뀔 수 있습니다.
 
 ## 개발자
 
@@ -97,14 +99,14 @@
 
 ### 사전 요구사항
 
-- **Frontend**: Node.js 18+, npm
+- **Frontend**: Node.js 22 LTS 권장 (최소 20), npm
 - **Backend** (API 연동 시): Java 11, MariaDB, Redis, DOMjudge
 
 ### Frontend 설치 및 실행
 
 ```bash
-git clone https://github.com/walab-Capstone1/Handongjudge_FE.git
-cd Handongjudge_FE
+git clone https://github.com/2026-codelab/H-CodeLab_FE.git
+cd H-CodeLab_FE
 npm install
 npm start
 ```
@@ -119,15 +121,15 @@ npm start
 REACT_APP_API_URL=http://localhost:8080/api
 ```
 
-환경 변수를 설정하지 않으면 기본값 `https://hcl.walab.info/api` 로 요청합니다.
+운영 배포 이미지는 `Dockerfile-frontend`에서 `REACT_APP_API_URL=/api`로 빌드되어, 화면과 같은 주소의 `/api`로 요청합니다.
 
 ### Backend 연동
 
 로컬에서 API·인증·채점 기능을 사용하려면 Backend를 함께 실행해야 합니다.
 
 ```bash
-git clone https://github.com/walab-Capstone1/Handongjudge_BE.git
-cd Handongjudge_BE
+git clone https://github.com/2026-codelab/H-CodeLab_BE.git
+cd H-CodeLab_BE
 # .env 파일 설정 (DB, Redis, DOMjudge, OAuth 등)
 ./gradlew bootRun
 ```
@@ -136,7 +138,7 @@ cd Handongjudge_BE
 - Frontend 기본 포트: `3000`
 - `local` 프로파일에서는 `http://localhost:3000` CORS가 허용됩니다.
 
-[Backend Repository](https://github.com/walab-Capstone1/Handongjudge_BE.git)
+[Backend Repository](https://github.com/2026-codelab/H-CodeLab_BE) · [Deploy Repository](https://github.com/2026-codelab/H-CodeLab_Deploy)
 
 ### 빌드
 
@@ -145,6 +147,22 @@ npm run build
 ```
 
 빌드 결과물은 `build/` 디렉토리에 생성됩니다.
+
+### 배포
+
+`master`에 머지되면 운영 서버의 Jenkins(`hcl-frontend` 작업)가 3분 안에 변경을 감지해 배포합니다.
+
+1. `Dockerfile-frontend`로 React를 빌드하고 nginx 이미지 생성 (커밋 해시로 태그)
+2. `nginx` 컨테이너 교체
+3. 화면 응답 확인. 실패하면 직전 버전으로 자동 되돌림
+
+로컬에서 운영과 같은 이미지를 만들어 보려면:
+
+```bash
+docker build -f Dockerfile-frontend -t hcl-frontend .
+```
+
+파이프라인 정의(`jenkins/Jenkinsfile.frontend`)와 nginx 설정은 [H-CodeLab_Deploy](https://github.com/2026-codelab/H-CodeLab_Deploy)에서 관리합니다. 자세한 규칙은 [CONTRIBUTING.md](./CONTRIBUTING.md#8-배포)를 참고하세요.
 
 ---
 
@@ -182,7 +200,8 @@ npm run build
 ### Test / Deploy
 ![Testing Library](https://img.shields.io/badge/Testing%20Library-E33332?style=for-the-badge&logo=testinglibrary&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
-![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white)
+![Jenkins](https://img.shields.io/badge/Jenkins-D24939?style=for-the-badge&logo=jenkins&logoColor=white)
+![Nginx](https://img.shields.io/badge/Nginx-009639?style=for-the-badge&logo=nginx&logoColor=white)
 
 
 ---
@@ -318,7 +337,7 @@ npm run build
 # 아키텍처 및 디렉토리 구조
 
 ```text
-📁 Handongjudge_FE
+📁 H-CodeLab_FE
 ├── 📁 public
 ├── 📁 src
 │   ├── 📄 App.tsx
@@ -337,7 +356,7 @@ npm run build
 │   ├── 🏷️ types
 │   └── 🛠️ utils
 ├── 🐳 Dockerfile-frontend
-├── ⚙️ .github/workflows/deploy-frontend.yml
+├── 🐳 .dockerignore
 └── 📦 package.json
 ```
 
