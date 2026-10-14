@@ -123,45 +123,6 @@ const ExecutionResult: React.FC<ExecutionResultProps> = ({
 		return `${size.toFixed(1)} ${units[unitIndex]}`;
 	};
 
-	const highlightDifferences = (diffText: string | undefined) => {
-		if (!diffText) return null;
-
-		const lines = diffText.split("\n");
-		const highlightedLines = lines.map((line, index) => {
-			if (line.includes("Judge:")) {
-				const parts = line.split("Judge:");
-				return (
-					<S.DiffLine key={index}>
-						{parts[0]}
-						<S.DiffExpected>Judge: {parts[1]}</S.DiffExpected>
-					</S.DiffLine>
-				);
-			} else if (line.includes("Team:")) {
-				const parts = line.split("Team:");
-				return (
-					<S.DiffLine key={index}>
-						{parts[0]}
-						<S.DiffActual>Team: {parts[1]}</S.DiffActual>
-					</S.DiffLine>
-				);
-			} else if (
-				line.includes("mismatch") ||
-				line.includes("Wrong") ||
-				line.includes("error")
-			) {
-				return (
-					<S.DiffLine key={index} $error>
-						{line}
-					</S.DiffLine>
-				);
-			} else {
-				return <S.DiffLine key={index}>{line}</S.DiffLine>;
-			}
-		});
-
-		return <S.DiffHighlighted>{highlightedLines}</S.DiffHighlighted>;
-	};
-
 	const getTestcaseSummary = (outputList: Testcase[] | undefined) => {
 		if (!outputList || outputList.length === 0) return { passed: 0, total: 0 };
 
@@ -446,24 +407,6 @@ const ExecutionResult: React.FC<ExecutionResultProps> = ({
 													` | 획득 점수: ${submissionResult.score!.toFixed(1)}/${submissionResult.points}점`}
 											</strong>
 										</S.TestcasesHeader>
-									{showHint && submissionResult.code && p < t && (
-										<HintBox
-											key={`hint-${problemId}-${submissionResult.submittedAt}`}
-											problemId={problemId as number}
-											code={submissionResult.code}
-											failingTestcases={submissionResult.outputList
-												.filter((tc) => tc.result !== "correct")
-												.map((tc) => ({
-													testcaseRank: tc.testcase_rank,
-													result: tc.result,
-													testcaseInput: tc.testcase_input,
-													expectedOutput: tc.expected_output,
-													output: tc.output,
-													outputError: tc.output_error,
-													outputDiff: tc.output_diff,
-												}))}
-										/>
-									)}
 
 										<S.TestcaseButtons>
 											{submissionResult.outputList.map((testcase, index) => (
@@ -549,15 +492,23 @@ const ExecutionResult: React.FC<ExecutionResultProps> = ({
 																	</S.TestcaseSection>
 																)}
 
-																{testcase.output_diff && (
-																	<S.TestcaseSection>
-																		<S.Label $type="diff">차이점:</S.Label>
-																		<S.Content>
-																			{highlightDifferences(
-																				testcase.output_diff,
-																			)}
-																		</S.Content>
-																	</S.TestcaseSection>
+																{showHint && submissionResult.code && p < t && (
+																	<HintBox
+																		key={`hint-${problemId}-${submissionResult.submittedAt}`}
+																		problemId={problemId as number}
+																		code={submissionResult.code}
+																		failingTestcases={submissionResult.outputList
+																			.filter((tc) => tc.result !== "correct")
+																			.map((tc) => ({
+																				testcaseRank: tc.testcase_rank,
+																				result: tc.result,
+																				testcaseInput: tc.testcase_input,
+																				expectedOutput: tc.expected_output,
+																				output: tc.output,
+																				outputError: tc.output_error,
+																				outputDiff: tc.output_diff,
+																			}))}
+																	/>
 																)}
 															</S.TestcaseDetails>
 														)}
