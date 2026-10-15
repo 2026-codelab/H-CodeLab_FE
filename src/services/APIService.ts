@@ -231,6 +231,23 @@ class APIService {
 		return response || null;
 	}
 
+	/** 힌트 버튼을 소모하지 않고 남은 사용 횟수만 조회 (버튼 초기 표시/새로고침용). */
+	async getHintUsage(problemId: number): Promise<any> {
+		return await this.request(`/problems/${problemId}/hint/usage`, {
+			method: "GET",
+		});
+	}
+
+	/**
+	 * "테스트하기"에서 학생이 선택한 테스트케이스에 대한 힌트 요청. 사용 횟수 제한 없음.
+	 */
+	async requestHint(problemId: number, testcaseContext: unknown): Promise<any> {
+		return await this.request(`/problems/${problemId}/hint`, {
+			method: "POST",
+			body: JSON.stringify(testcaseContext),
+		});
+	}
+
 	async submitCodeAndGetOutput(
 		sectionId: number | string,
 		problemId: number | string,
