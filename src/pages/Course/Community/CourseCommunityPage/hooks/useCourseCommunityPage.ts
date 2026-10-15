@@ -109,6 +109,26 @@ export function useCourseCommunityPage() {
 			} else if (filter === "RESOLVED") {
 				content = content.filter((q) => statusNorm(q.status) === "RESOLVED");
 			}
+			// 목록 API(QuestionListDto)는 assignmentId/problemId가 아니라
+			// assignmentTitle/problemTitle(제목 문자열)만 내려줘서, 제목으로 매칭한다.
+			if (assignmentFilter !== "ALL") {
+				const selectedAssignment = assignments.find(
+					(a) => String(a.id) === assignmentFilter,
+				);
+				content = content.filter(
+					(q) => q.assignmentTitle === selectedAssignment?.title,
+				);
+			}
+			if (problemFilter !== "ALL") {
+				const selectedProblem = problems.find(
+					(p) => String(p.id ?? p.problemId) === problemFilter,
+				);
+				const selectedProblemTitle =
+					selectedProblem?.title ?? selectedProblem?.problemTitle;
+				content = content.filter(
+					(q) => q.problemTitle === selectedProblemTitle,
+				);
+			}
 			const pages = data?.data?.totalPages ?? 0;
 			setQuestions(content);
 			setTotalPages(pages);
@@ -140,7 +160,15 @@ export function useCourseCommunityPage() {
 		} finally {
 			setLoading(false);
 		}
-	}, [sectionId, filter, currentPage]);
+	}, [
+		sectionId,
+		filter,
+		currentPage,
+		assignmentFilter,
+		problemFilter,
+		assignments,
+		problems,
+	]);
 
 	useEffect(() => {
 		fetchData();
@@ -164,13 +192,23 @@ export function useCourseCommunityPage() {
 				`/community/questions/search?${params.toString()}`,
 			);
 			let list: Question[] = data?.data?.content ?? [];
+			// 목록 API와 마찬가지로 검색 API도 assignmentId/problemId가 아니라
+			// assignmentTitle/problemTitle만 내려주므로 제목으로 매칭한다.
 			if (assignmentFilter !== "ALL") {
+				const selectedAssignment = assignments.find(
+					(a) => String(a.id) === assignmentFilter,
+				);
 				list = list.filter(
-					(q) => q.assignmentId?.toString() === assignmentFilter,
+					(q) => q.assignmentTitle === selectedAssignment?.title,
 				);
 			}
 			if (problemFilter !== "ALL") {
-				list = list.filter((q) => q.problemId?.toString() === problemFilter);
+				const selectedProblem = problems.find(
+					(p) => String(p.id ?? p.problemId) === problemFilter,
+				);
+				const selectedProblemTitle =
+					selectedProblem?.title ?? selectedProblem?.problemTitle;
+				list = list.filter((q) => q.problemTitle === selectedProblemTitle);
 			}
 			setQuestions(list);
 			setTotalPages(data?.data?.totalPages ?? 0);
@@ -187,6 +225,8 @@ export function useCourseCommunityPage() {
 		currentPage,
 		assignmentFilter,
 		problemFilter,
+		assignments,
+		problems,
 		fetchData,
 	]);
 
