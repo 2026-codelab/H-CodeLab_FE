@@ -67,7 +67,10 @@ export default function SuperAdminUserManagementView(
 									<S.Td>{u.email || "-"}</S.Td>
 									<S.Td>{u.studentId || "-"}</S.Td>
 									<S.Td>
-										<span
+										<select
+											value={u.role}
+											disabled={d.updatingUserId === u.id}
+											onChange={(e) => d.handleRoleChange(u.id, e.target.value)}
 											style={{
 												padding: "0.25rem 0.6rem",
 												borderRadius: "12px",
@@ -75,10 +78,17 @@ export default function SuperAdminUserManagementView(
 												fontWeight: 600,
 												background: "#f3f4f6",
 												color: "#6b7280",
+												border: "1px solid #e5e7eb",
+												cursor:
+													d.updatingUserId === u.id ? "not-allowed" : "pointer",
 											}}
 										>
-											{d.getRoleLabel(u.role)}
-										</span>
+											<option value="USER">{d.getRoleLabel("USER")}</option>
+											<option value="ADMIN">{d.getRoleLabel("ADMIN")}</option>
+											<option value="SUPER_ADMIN">
+												{d.getRoleLabel("SUPER_ADMIN")}
+											</option>
+										</select>
 									</S.Td>
 									<S.Td>
 										{u.createdAt

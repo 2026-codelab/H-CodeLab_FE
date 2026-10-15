@@ -651,6 +651,16 @@ class APIService {
 		return await this.request("/admin/system-admin/users");
 	}
 
+	async updateUserRoleBySuperAdmin(
+		userId: number,
+		role: string,
+	): Promise<any> {
+		return await this.request(`/admin/system-admin/users/${userId}/role`, {
+			method: "PATCH",
+			body: JSON.stringify({ role }),
+		});
+	}
+
 	async getAllSubmissionsForSuperAdmin(page = 0, size = 50): Promise<any> {
 		return await this.request(
 			`/admin/system-admin/submissions?page=${page}&size=${size}`,
