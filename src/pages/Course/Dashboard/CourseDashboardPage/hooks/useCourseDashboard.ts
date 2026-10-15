@@ -64,7 +64,7 @@ export function useCourseDashboard() {
 	const publicSections: CourseCardData[] = [];
 
 	const fetchManagingSections = useCallback(async () => {
-		if (!auth?.user) return;
+		if (!auth?.user?.id) return;
 		try {
 			const response = await APIService.getManagingSections();
 			const sectionsData = response?.data || [];
@@ -99,7 +99,7 @@ export function useCourseDashboard() {
 			console.error("관리 중인 수업 조회 실패:", err);
 			setManagingSections([]);
 		}
-	}, [auth?.user]);
+	}, [auth?.user?.id]);
 
 	const fetchDashboardData = useCallback(async () => {
 		try {
@@ -337,54 +337,22 @@ export function useCourseDashboard() {
 		}
 	}, [sectionId, navigate]);
 
-	const fetchSectionQuizzes = useCallback(async () => {
-		if (sectionId == null) return;
-		try {
-			const res = await APIService.getQuizzesBySection(sectionId);
-			const raw = res?.data ?? res ?? [];
-			const list = (Array.isArray(raw) ? raw : []).map(
-				(q: {
-					id: number;
-					title?: string;
-					startTime?: string;
-					endTime?: string;
-					status?: string;
-				}) => ({
-					id: q.id,
-					title: q.title ?? "",
-					startTime: q.startTime ?? "",
-					endTime: q.endTime ?? "",
-					status: (q.status as SectionQuiz["status"]) ?? undefined,
-				}),
-			);
-			setSectionQuizzes(list);
-		} catch (err) {
-			console.error("코딩 테스트 목록 조회 실패:", err);
-			setSectionQuizzes([]);
-		}
-	}, [sectionId]);
-
 	useEffect(() => {
-		if (auth.user && sectionId != null) {
+		if (auth.user?.id != null && sectionId != null) {
 			fetchDashboardData();
 			fetchManagingSections();
-			fetchSectionQuizzes();
 		}
-	}, [
-		auth.user,
-		sectionId,
-		fetchDashboardData,
-		fetchManagingSections,
-		fetchSectionQuizzes,
-	]);
+	}, [auth.user?.id, sectionId, fetchDashboardData, fetchManagingSections]);
 
+	// 섹션의 코딩 테스트 목록과, 과제/코딩 테스트 기반 학습 진행률을 한 번에 조회한다.
+	// (예전에는 getQuizzesBySection을 이 effect와 fetchSectionQuizzes 두 곳에서 각각 호출해 중복 호출이 발생했음)
 	useEffect(() => {
-		const user = auth.user;
-		if (sectionId == null || user?.id == null) {
+		const userId = auth.user?.id;
+		if (sectionId == null || userId == null) {
+			setSectionQuizzes([]);
 			setStudyProgress((prev) => ({ ...prev, loading: false }));
 			return;
 		}
-		const userId = user.id;
 		let cancelled = false;
 		setStudyProgress((prev) => ({ ...prev, loading: true, error: false }));
 
@@ -402,6 +370,25 @@ export function useCourseDashboard() {
 					? assignmentsRaw
 					: [];
 				const quizzesList = Array.isArray(quizzesRaw) ? quizzesRaw : [];
+
+				if (!cancelled) {
+					const quizListForDisplay = quizzesList.map(
+						(q: {
+							id: number;
+							title?: string;
+							startTime?: string;
+							endTime?: string;
+							status?: string;
+						}) => ({
+							id: q.id,
+							title: q.title ?? "",
+							startTime: q.startTime ?? "",
+							endTime: q.endTime ?? "",
+							status: (q.status as SectionQuiz["status"]) ?? undefined,
+						}),
+					);
+					setSectionQuizzes(quizListForDisplay);
+				}
 
 				const upcoming = assignmentsList.filter((a: { endDate?: string }) => {
 					if (!a?.endDate) return false;
@@ -482,8 +469,10 @@ export function useCourseDashboard() {
 						quizTotalProblems,
 					});
 				}
-			} catch {
+			} catch (err) {
+				console.error("코딩 테스트 목록 조회 실패:", err);
 				if (!cancelled) {
+					setSectionQuizzes([]);
 					setStudyProgress((prev) => ({
 						...prev,
 						loading: false,
@@ -497,7 +486,7 @@ export function useCourseDashboard() {
 		return () => {
 			cancelled = true;
 		};
-	}, [sectionId, auth.user]);
+	}, [sectionId, auth.user?.id]);
 
 	const handleMenuClick = useCallback((_menuId: string) => {}, []);
 

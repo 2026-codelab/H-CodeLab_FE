@@ -24,7 +24,7 @@ export function useCodingQuizPage() {
 	const autoOpenQuizHandledRef = useRef(false);
 
 	const fetchUserRole = useCallback(async () => {
-		if (!sectionId || !auth.user) return;
+		if (!sectionId || !auth.user?.id) return;
 
 		try {
 			const response = await APIService.getMyRoleInSection(Number(sectionId));
@@ -50,13 +50,15 @@ export function useCodingQuizPage() {
 			setUserRole(null);
 			setIsManager(false);
 		}
-	}, [sectionId, auth.user]);
+	}, [sectionId, auth.user?.id]);
 
 	const fetchData = useCallback(async () => {
-		if (!sectionId) return;
+		// 인증 복원이 끝나기 전에 호출되면 Authorization 헤더 없이 요청이 나가
+		// 서버에서 간헐적으로 400을 반환하는 문제가 있어, 로그인한 사용자가 확인된 뒤에만 조회한다.
+		if (!sectionId || !auth.user?.id) return;
 		try {
 			setLoading(true);
-			
+
 			// 사용자 역할 조회
 			await fetchUserRole();
 
@@ -84,7 +86,7 @@ export function useCodingQuizPage() {
 		} finally {
 			setLoading(false);
 		}
-	}, [sectionId, fetchUserRole]);
+	}, [sectionId, auth.user?.id, fetchUserRole]);
 
 	useEffect(() => {
 		fetchData();
