@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import APIService from "../services/APIService";
 import { getSectionId } from "../utils/urlUtils";
+import { devLog } from "../utils/devLog";
 
 interface AssignmentInfo {
   id: number;
@@ -31,35 +32,35 @@ export const useAssignmentData = (
         const currentSectionId = getSectionId(pathname, locationState);
         setSectionId(String(currentSectionId));
 
-        console.log("과제 정보 로드 시작:", { assignmentId, sectionId: currentSectionId });
+        devLog("과제 정보 로드 시작:", { assignmentId, sectionId: currentSectionId });
         const assignmentResponse = await APIService.getAssignmentInfoBySection(
           currentSectionId!,
           assignmentId
         );
         const assignmentData = assignmentResponse.data || assignmentResponse;
-        console.log("과제 정보 로드 성공:", assignmentData);
+        devLog("과제 정보 로드 성공:", assignmentData);
 
         if (assignmentData) {
           setAssignmentInfo(assignmentData);
         }
 
-        console.log("과제 문제 목록 로드 시작:", { sectionId: currentSectionId, assignmentId });
+        devLog("과제 문제 목록 로드 시작:", { sectionId: currentSectionId, assignmentId });
         const problemsResponse = await APIService.getAssignmentProblems(
           currentSectionId!,
           assignmentId
         );
         const problemsData = problemsResponse.data || problemsResponse;
-        console.log("과제 문제 목록 로드 성공:", problemsData);
+        devLog("과제 문제 목록 로드 성공:", problemsData);
 
         setProblems(problemsData.problems || problemsData);
 
         if (!assignmentData && problemsData.assignment) {
-          console.log("문제 목록에서 과제 정보 설정:", problemsData.assignment);
+          devLog("문제 목록에서 과제 정보 설정:", problemsData.assignment);
           setAssignmentInfo(problemsData.assignment);
         }
 
         if (!assignmentData && !problemsData.assignment) {
-          console.log("기본 과제 정보 설정");
+          devLog("기본 과제 정보 설정");
           setAssignmentInfo({
             id: parseInt(assignmentId),
             title: `과제 ${assignmentId}`,
