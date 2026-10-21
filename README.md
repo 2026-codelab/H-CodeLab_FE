@@ -48,6 +48,7 @@
 - **학생**: 수업·과제·문제 풀이, 코딩 테스트 응시, 공지 확인, 커뮤니티 Q&A
 - **교수**: 수업·문제·과제·코딩 테스트 관리, 학생 진행 현황·채점·성적 관리
 - **자동 채점**: DOMjudge 연동으로 코드 제출 후 즉시 채점 결과 확인
+- **AI 단계별 힌트**: 채점 실패 시 오류 유형에 맞는 AI 힌트를 단계적으로 제공, 정답 코드는 직접 노출하지 않음
 - **코드 에디터**: CodeMirror 기반 브라우저 IDE (C, C++, Java, Python 등)
 - **인증**: 이메일/비밀번호 및 소셜 로그인 (Google, GitHub)
 
@@ -64,31 +65,22 @@
 <table>
   <tr>
     <td align="center">
-      <a href="https://github.com/dnqudgml12">
-        <img src="https://github.com/dnqudgml12.png" width="100" alt="우병희"/>
+      <a href="https://github.com/BackSeungBeom">
+        <img src="https://github.com/BackSeungBeom.png" width="100" alt="백승범"/>
       </a>
       <br />
-      <b>우병희</b>
+      <b>백승범</b>
       <br />
-      Frontend, Backend
+      Backend, Frontend
     </td>
     <td align="center">
-      <a href="https://github.com/seowon1112">
-        <img src="https://github.com/seowon1112.png" width="100" alt="곽서원"/>
+      <a href="https://github.com/kayoung-dev">
+        <img src="https://github.com/kayoung-dev.png" width="100" alt="김가영"/>
       </a>
       <br />
-      <b>곽서원</b>
+      <b>김가영</b>
       <br />
-      Frontend, Backend
-    </td>
-    <td align="center">
-      <a href="https://github.com/Diggydogg">
-        <img src="https://github.com/Diggydogg.png" width="100" alt="윤동혁"/>
-      </a>
-      <br />
-      <b>윤동혁</b>
-      <br />
-      Infra, Backend
+      Backend, Frontend
     </td>
   </tr>
 </table>
