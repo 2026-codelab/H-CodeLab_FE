@@ -4,8 +4,7 @@ import { useRecoilValue } from "recoil";
 import { authState } from "../../../../../recoil/atoms";
 import apiService from "../../../../../services/APIService";
 import indexedDBManager from "../../../../../utils/IndexedDBManager";
-import { fetchEventSource } from "@microsoft/fetch-event-source";
-import tokenManager from "../../../../../utils/tokenManager";
+import { connectAuthenticatedSSE } from "../../../../../utils/authenticatedSSE";
 import { getDefaultCode, resultMapping } from "../utils";
 import { toSectionLanguage } from "../../../../../utils/sectionLanguage";
 import type {
@@ -960,17 +959,11 @@ export function useCodingQuizSolve() {
 			// Step 2: SSE 연결 → testcase/total/complete/ce/error 이벤트 처리
 			const baseURL =
 				process.env.REACT_APP_API_URL || "https://hcl.walab.info/api";
-			const token = tokenManager.getAccessToken();
 
-			await fetchEventSource(
+			await connectAuthenticatedSSE(
 				`${baseURL}/submissions/test/stream/${sessionKey}?sectionId=${resSectionId}`,
 				{
-					method: "GET",
-					headers: {
-						...(token ? { Authorization: `Bearer ${token}` } : {}),
-					},
 					signal: abortController.signal,
-					openWhenHidden: true,
 					onmessage(event) {
 						if (abortController.signal.aborted) return;
 						try {
@@ -1051,10 +1044,6 @@ export function useCodingQuizSolve() {
 						} catch {
 							// JSON 파싱 실패는 무시
 						}
-					},
-					onerror(err) {
-						if (abortController.signal.aborted) return;
-						throw err;
 					},
 				},
 			);
