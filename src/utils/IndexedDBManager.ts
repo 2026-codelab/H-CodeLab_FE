@@ -1,3 +1,5 @@
+import { devLog } from "./devLog";
+
 export interface CodeStorageRecord {
 	id: string;
 	sessionId: string;
@@ -48,7 +50,7 @@ class IndexedDBManager {
 			request.onsuccess = () => {
 				this.db = request.result ?? null;
 				if (this.db) {
-					console.log("IndexedDB 초기화 완료");
+					devLog("IndexedDB 초기화 완료");
 					resolve(this.db);
 				} else {
 					reject(new Error("Failed to open IndexedDB"));
@@ -63,7 +65,7 @@ class IndexedDBManager {
 					store.createIndex("sessionId", "sessionId", { unique: false });
 					store.createIndex("problemId", "problemId", { unique: false });
 					store.createIndex("timestamp", "timestamp", { unique: false });
-					console.log("IndexedDB 객체 저장소 생성 완료");
+					devLog("IndexedDB 객체 저장소 생성 완료");
 				}
 			};
 		});
@@ -123,7 +125,7 @@ class IndexedDBManager {
 			const request = store.put(data);
 
 			request.onsuccess = () => {
-				console.log("세션 코드 저장 완료:", data.id);
+				devLog("세션 코드 저장 완료:", data.id);
 				resolve(data);
 			};
 
@@ -164,10 +166,10 @@ class IndexedDBManager {
 			request.onsuccess = () => {
 				const result = request.result as CodeStorageRecord | undefined;
 				if (result) {
-					console.log("세션 코드 조회 성공:", result.id);
+					devLog("세션 코드 조회 성공:", result.id);
 					resolve(result);
 				} else {
-					console.log("세션 코드 없음:", id);
+					devLog("세션 코드 없음:", id);
 					resolve(null);
 				}
 			};
@@ -196,7 +198,7 @@ class IndexedDBManager {
 
 			request.onsuccess = () => {
 				const result = (request.result ?? []) as CodeStorageRecord[];
-				console.log(`세션 ${sessionId}의 모든 코드 조회:`, result.length);
+				devLog(`세션 ${sessionId}의 모든 코드 조회:`, result.length);
 				resolve(result);
 			};
 
@@ -235,7 +237,7 @@ class IndexedDBManager {
 			const request = store.delete(id);
 
 			request.onsuccess = () => {
-				console.log("세션 코드 삭제 완료:", id);
+				devLog("세션 코드 삭제 완료:", id);
 				resolve(true);
 			};
 
@@ -270,7 +272,7 @@ class IndexedDBManager {
 					deletedCount++;
 					cursor.continue();
 				} else {
-					console.log(`세션 ${sessionId} 정리 완료 - ${deletedCount}개 삭제`);
+					devLog(`세션 ${sessionId} 정리 완료 - ${deletedCount}개 삭제`);
 					resolve(deletedCount);
 				}
 			};
@@ -306,7 +308,7 @@ class IndexedDBManager {
 					deletedCount++;
 					cursor.continue();
 				} else {
-					console.log(`오래된 데이터 정리 완료 - ${deletedCount}개 삭제`);
+					devLog(`오래된 데이터 정리 완료 - ${deletedCount}개 삭제`);
 					resolve(deletedCount);
 				}
 			};
@@ -322,7 +324,7 @@ class IndexedDBManager {
 		if (this.db) {
 			this.db.close();
 			this.db = null;
-			console.log("IndexedDB 연결 해제");
+			devLog("IndexedDB 연결 해제");
 		}
 	}
 
@@ -333,7 +335,7 @@ class IndexedDBManager {
 			const deleteRequest = indexedDB.deleteDatabase(this.dbName);
 
 			deleteRequest.onsuccess = () => {
-				console.log("IndexedDB 삭제 완료");
+				devLog("IndexedDB 삭제 완료");
 				resolve(true);
 			};
 
