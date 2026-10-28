@@ -18,11 +18,6 @@ import type { ProblemWorkStatus } from "../../../Course/CodingQuiz/CodingQuizSol
 export type TestcaseResult = { index: number; result: string };
 
 export type PanelKey = "description" | "editor" | "result";
-export type PanelLayout = {
-	left: PanelKey;
-	topRight: PanelKey;
-	bottomRight: PanelKey;
-};
 type SessionSaveStatus = "idle" | "saving" | "saved" | "error";
 type CodeLoadSource = "session" | "backend" | "default" | null;
 type AssignmentProblemSummary = { id: number; title: string; order: number };
@@ -77,11 +72,6 @@ export function useProblemSolve() {
 	const navigate = useNavigate();
 	const [horizontalSizes, setHorizontalSizes] = useState([28, 72]);
 	const [verticalSizes, setVerticalSizes] = useState([82, 18]);
-	const [panelLayout, setPanelLayout] = useState<PanelLayout>({
-		left: "description",
-		topRight: "editor",
-		bottomRight: "result",
-	});
 	const [sessionId, setSessionId] = useState<string | null>(null);
 	const [sessionSaveStatus, setSessionSaveStatus] =
 		useState<SessionSaveStatus>("idle");
@@ -543,35 +533,6 @@ export function useProblemSolve() {
 		window.addEventListener("beforeunload", handleBeforeUnload);
 		return () => window.removeEventListener("beforeunload", handleBeforeUnload);
 	}, [code, language]);
-
-	const handlePanelMove = useCallback(
-		(draggedPanelId: string, targetPanelId: string) => {
-			if (draggedPanelId === targetPanelId) return;
-			setPanelLayout((currentLayout) => {
-				let draggedPos: keyof PanelLayout | null = null;
-				let targetPos: keyof PanelLayout | null = null;
-				if (currentLayout.left === draggedPanelId) draggedPos = "left";
-				else if (currentLayout.topRight === draggedPanelId)
-					draggedPos = "topRight";
-				else if (currentLayout.bottomRight === draggedPanelId)
-					draggedPos = "bottomRight";
-				if (currentLayout.left === targetPanelId) targetPos = "left";
-				else if (currentLayout.topRight === targetPanelId)
-					targetPos = "topRight";
-				else if (currentLayout.bottomRight === targetPanelId)
-					targetPos = "bottomRight";
-				if (draggedPos && targetPos) {
-					return {
-						...currentLayout,
-						[draggedPos]: targetPanelId as PanelKey,
-						[targetPos]: draggedPanelId as PanelKey,
-					};
-				}
-				return currentLayout;
-			});
-		},
-		[],
-	);
 
 	const handleSubmit = useCallback(async () => {
 		if (!code.trim()) {
@@ -1052,12 +1013,10 @@ export function useProblemSolve() {
 		isLoading,
 		horizontalSizes,
 		verticalSizes,
-		panelLayout,
 		problems,
 		isProblemModalOpen,
 		isProblemChanging,
 		setIsProblemModalOpen,
-		handlePanelMove,
 		handleProblemChange,
 		problemNav,
 		sectionAssignments,

@@ -1,14 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
-import { DndProvider } from "react-dnd";
-import { HTML5Backend } from "react-dnd-html5-backend";
 import Split from "react-split";
 import CodeMirror from "@uiw/react-codemirror";
 import { python } from "@codemirror/lang-python";
 import { java } from "@codemirror/lang-java";
 import { cpp } from "@codemirror/lang-cpp";
 import { fetchEventSource } from "@microsoft/fetch-event-source";
-import DraggablePanel from "../../CodingQuiz/CodingQuizSolvePage/DraggablePanel";
+import { SolvePanel } from "../../CodingQuiz/CodingQuizSolvePage/SolvePanel";
 import * as ES from "../../CodingQuiz/CodingQuizSolvePage/CodeEditor/styles";
 import * as RS from "../../CodingQuiz/CodingQuizSolvePage/ExecutionResult/styles";
 import * as DS from "../../CodingQuiz/CodingQuizSolvePage/ProblemDescription/styles";
@@ -19,8 +17,6 @@ import { findPracticeLanguage, type PracticeLanguage } from "../languages";
 import * as S from "./styles";
 
 type Language = PracticeLanguage;
-type PanelKey = "editor" | "stdin" | "output";
-type PanelLayout = { left: PanelKey; topRight: PanelKey; bottomRight: PanelKey };
 type Theme = "light" | "dark";
 
 const DEFAULT_CODE: Record<Language, string> = {
@@ -59,28 +55,7 @@ export default function CodingPracticePage() {
 	const [code, setCode] = useState(DEFAULT_CODE[language]);
 	const [stdin, setStdin] = useState("");
 	const [runState, setRunState] = useState<RunState>({ status: "idle" });
-	const [panelLayout, setPanelLayout] = useState<PanelLayout>({
-		left: "editor",
-		topRight: "stdin",
-		bottomRight: "output",
-	});
 	const abortRef = useRef<AbortController | null>(null);
-
-	const handlePanelMove = useCallback((draggedId: string, targetId: string) => {
-		if (draggedId === targetId) return;
-		setPanelLayout((current) => {
-			let draggedPos: keyof PanelLayout | null = null;
-			let targetPos: keyof PanelLayout | null = null;
-			(Object.keys(current) as Array<keyof PanelLayout>).forEach((pos) => {
-				if (current[pos] === draggedId) draggedPos = pos;
-				if (current[pos] === targetId) targetPos = pos;
-			});
-			if (draggedPos && targetPos) {
-				return { ...current, [draggedPos]: targetId as PanelKey, [targetPos]: draggedId as PanelKey };
-			}
-			return current;
-		});
-	}, []);
 
 	// URL로 다른 언어에 들어오면 같은 컴포넌트가 재사용되므로 코드/결과를 초기화
 	useEffect(() => {
@@ -236,69 +211,58 @@ export default function CodingPracticePage() {
 		</RS.ResultArea>
 	);
 
-	const panels: Record<PanelKey, React.ReactNode> = { editor: editorPanel, stdin: stdinPanel, output: outputPanel };
-	const titles: Record<PanelKey, string> = { editor: "코드 에디터", stdin: "입력값", output: "실행 결과" };
-
-	const renderPanel = (panelType: PanelKey) => (
-		<DraggablePanel id={panelType} type={panelType} title={titles[panelType]} onMove={handlePanelMove} showDragHandle>
-			{panels[panelType]}
-		</DraggablePanel>
-	);
-
 	if (!languageOption) {
 		return <Navigate to={`/sections/${sectionId}/coding-practice`} replace />;
 	}
 
 	return (
-		<DndProvider backend={HTML5Backend}>
-			<PS.PageWrapper className={`problem-solve-page ${theme}`} $theme={theme}>
-				<PS.Header $theme={theme}>
-					<PS.HeaderBreadcrumbWrap>
-						<PS.Breadcrumb>
-							<PS.BreadcrumbLink type="button" onClick={() => navigate(`/sections/${sectionId}/dashboard`)}>
-								대시보드
-							</PS.BreadcrumbLink>
-							<span> › </span>
-							<PS.BreadcrumbLink type="button" onClick={goToLanguageSelect}>
-								코딩 실습
-							</PS.BreadcrumbLink>
-							<span> › </span>
-							<PS.BreadcrumbCurrent $theme={theme}>{languageOption.label}</PS.BreadcrumbCurrent>
-						</PS.Breadcrumb>
-					</PS.HeaderBreadcrumbWrap>
-					<PS.Controls>
-						<PS.ThemeButton type="button" $active={theme === "light"} $theme={theme} onClick={() => setTheme("light")}>
-							Light
-						</PS.ThemeButton>
-						<PS.ThemeButton type="button" $active={theme === "dark"} $theme={theme} onClick={() => setTheme("dark")}>
-							Dark
-						</PS.ThemeButton>
-					</PS.Controls>
-				</PS.Header>
-				<PS.MainSplit>
+		<PS.PageWrapper className={`problem-solve-page ${theme}`} $theme={theme}>
+			<PS.Header $theme={theme}>
+				<PS.HeaderBreadcrumbWrap>
+					<PS.Breadcrumb>
+						<PS.BreadcrumbLink type="button" onClick={() => navigate(`/sections/${sectionId}/dashboard`)}>
+							대시보드
+						</PS.BreadcrumbLink>
+						<span> › </span>
+						<PS.BreadcrumbLink type="button" onClick={goToLanguageSelect}>
+							코딩 실습
+						</PS.BreadcrumbLink>
+						<span> › </span>
+						<PS.BreadcrumbCurrent $theme={theme}>{languageOption.label}</PS.BreadcrumbCurrent>
+					</PS.Breadcrumb>
+				</PS.HeaderBreadcrumbWrap>
+				<PS.Controls>
+					<PS.ThemeButton type="button" $active={theme === "light"} $theme={theme} onClick={() => setTheme("light")}>
+						Light
+					</PS.ThemeButton>
+					<PS.ThemeButton type="button" $active={theme === "dark"} $theme={theme} onClick={() => setTheme("dark")}>
+						Dark
+					</PS.ThemeButton>
+				</PS.Controls>
+			</PS.Header>
+			<PS.MainSplit>
+				<Split
+					sizes={[65, 35]}
+					direction="horizontal"
+					minSize={200}
+					gutterSize={20}
+					gutterStyle={() => ({ backgroundColor: theme === "dark" ? "#2d3748" : "#cbd5e0" })}
+					style={{ display: "flex", width: "100%" }}
+				>
+					<SolvePanel>{editorPanel}</SolvePanel>
 					<Split
-						sizes={[65, 35]}
-						direction="horizontal"
-						minSize={200}
+						sizes={[45, 55]}
+						direction="vertical"
+						minSize={80}
 						gutterSize={20}
 						gutterStyle={() => ({ backgroundColor: theme === "dark" ? "#2d3748" : "#cbd5e0" })}
-						style={{ display: "flex", width: "100%" }}
+						style={{ display: "flex", flexDirection: "column", height: "100%" }}
 					>
-						{renderPanel(panelLayout.left)}
-						<Split
-							sizes={[45, 55]}
-							direction="vertical"
-							minSize={80}
-							gutterSize={20}
-							gutterStyle={() => ({ backgroundColor: theme === "dark" ? "#2d3748" : "#cbd5e0" })}
-							style={{ display: "flex", flexDirection: "column", height: "100%" }}
-						>
-							{renderPanel(panelLayout.topRight)}
-							{renderPanel(panelLayout.bottomRight)}
-						</Split>
+						<SolvePanel>{stdinPanel}</SolvePanel>
+						<SolvePanel>{outputPanel}</SolvePanel>
 					</Split>
-				</PS.MainSplit>
-			</PS.PageWrapper>
-		</DndProvider>
+				</Split>
+			</PS.MainSplit>
+		</PS.PageWrapper>
 	);
 }

@@ -12,7 +12,6 @@ import type {
 	QuizInfo,
 	SectionInfo,
 	CurrentProblem,
-	PanelLayout,
 	SubmissionResult,
 	Problem,
 	ProblemWorkStatus,
@@ -72,11 +71,6 @@ export function useCodingQuizSolve() {
 	const [horizontalSizes, setHorizontalSizes] = useState([28, 72]);
 	const [verticalSizes, setVerticalSizes] = useState([82, 18]);
 	const [isTimeUp, setIsTimeUp] = useState(false);
-	const [panelLayout, setPanelLayout] = useState<PanelLayout>({
-		left: "description",
-		topRight: "editor",
-		bottomRight: "result",
-	});
 	const [sessionId, setSessionId] = useState<string | null>(null);
 	const [sessionSaveStatus, setSessionSaveStatus] = useState<
 		"idle" | "saving" | "saved" | "error"
@@ -690,35 +684,6 @@ export function useCodingQuizSolve() {
 		pendingProblemIdRef.current = null;
 	}, []);
 
-	const handlePanelMove = useCallback(
-		(draggedPanelId: string, targetPanelId: string) => {
-			if (draggedPanelId === targetPanelId) return;
-			setPanelLayout((currentLayout) => {
-				let draggedPos: keyof PanelLayout | null = null;
-				let targetPos: keyof PanelLayout | null = null;
-				if (currentLayout.left === draggedPanelId) draggedPos = "left";
-				else if (currentLayout.topRight === draggedPanelId)
-					draggedPos = "topRight";
-				else if (currentLayout.bottomRight === draggedPanelId)
-					draggedPos = "bottomRight";
-				if (currentLayout.left === targetPanelId) targetPos = "left";
-				else if (currentLayout.topRight === targetPanelId)
-					targetPos = "topRight";
-				else if (currentLayout.bottomRight === targetPanelId)
-					targetPos = "bottomRight";
-				if (draggedPos && targetPos) {
-					return {
-						...currentLayout,
-						[draggedPos]: targetPanelId,
-						[targetPos]: draggedPanelId,
-					};
-				}
-				return currentLayout;
-			});
-		},
-		[],
-	);
-
 	/**
 	 * Phase 2 공통 폴링 로직.
 	 * POST /submit → submissionDbId 획득 → 1.5초 간격으로 GET /result 폴링 → 완료 시 setState.
@@ -1128,7 +1093,6 @@ export function useCodingQuizSolve() {
 		isLoading,
 		horizontalSizes,
 		verticalSizes,
-		panelLayout,
 		isProblemModalOpen,
 		isProblemChanging,
 		setIsProblemModalOpen,
@@ -1139,7 +1103,6 @@ export function useCodingQuizSolve() {
 		handleExamSessionTakeover,
 		handleTimeUp,
 		handleProblemChange,
-		handlePanelMove,
 		handleSubmit,
 		handleSubmitWithOutput,
 		saveToBackend,
