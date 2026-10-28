@@ -19,6 +19,7 @@ import { tags } from "@lezer/highlight";
 import * as S from "./styles";
 import { indentationVisuals } from "./editorExtensions";
 import { useRunShortcut } from "./useRunShortcut";
+import { MAX_FONT_SIZE, MIN_FONT_SIZE, useEditorFontSize } from "./useEditorFontSize";
 
 /** 구두점·연산자 구분이 잘 되도록 한쪽은 회색·한쪽은 청록 톤 */
 const READABLE_MONO_FONT =
@@ -161,6 +162,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
 	const isSubmitDisabled = isSubmitting || (!isAssignmentActive && !isManager);
 	const isActionLocked = isSubmitDisabled || isSaveLocked;
 	useRunShortcut(onSubmitWithOutput, isActionLocked);
+	const { fontSize, increase, decrease, reset, fontSizeExtensions } = useEditorFontSize();
 	const disabledReason =
 		!isAssignmentActive && !isManager ? "과제가 비활성화되었습니다" : "";
 	const lockReason =
@@ -457,6 +459,29 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
 									? "cpp"
 									: language}
 					</span>
+					<S.FontSizeControl role="group" aria-label="글꼴 크기">
+						<S.FontSizeButton
+							type="button"
+							onClick={decrease}
+							disabled={fontSize <= MIN_FONT_SIZE}
+							title="글꼴 작게 (Ctrl/⌘ + -)"
+							aria-label="글꼴 작게"
+						>
+							A−
+						</S.FontSizeButton>
+						<S.FontSizeValue type="button" onClick={reset} title="기본 크기로 (Ctrl/⌘ + 0)">
+							{fontSize}px
+						</S.FontSizeValue>
+						<S.FontSizeButton
+							type="button"
+							onClick={increase}
+							disabled={fontSize >= MAX_FONT_SIZE}
+							title="글꼴 크게 (Ctrl/⌘ + =)"
+							aria-label="글꼴 크게"
+						>
+							A+
+						</S.FontSizeButton>
+					</S.FontSizeControl>
 					<S.SessionSaveStatus>
 						{codeLoadSource && codeLoadSource !== "default" && (
 							<S.LoadSource $source={codeLoadSource}>
@@ -568,6 +593,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
 								: readableLightHighlight,
 						),
 						indentationVisuals,
+						...fontSizeExtensions,
 					]}
 					theme={theme === "dark" ? "dark" : "light"}
 					onChange={onCodeChange}
