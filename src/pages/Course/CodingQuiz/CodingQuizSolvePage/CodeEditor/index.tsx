@@ -8,7 +8,7 @@ import { EditorView } from "@codemirror/view";
 import { linter, lintGutter, type Diagnostic } from "@codemirror/lint";
 import { autocompletion, completionKeymap } from "@codemirror/autocomplete";
 import { indentWithTab } from "@codemirror/commands";
-import { keymap } from "@codemirror/view";
+import { keymap, ViewPlugin } from "@codemirror/view";
 import {
 	bracketMatching,
 	foldGutter,
@@ -103,6 +103,34 @@ const editorChromeTheme = EditorView.theme({
 		fontFamily: READABLE_MONO_FONT,
 	},
 });
+
+/**
+ * 선택 영역(.cm-selectionBackground)은 텍스트 "아래" 레이어에 그려지므로
+ * 현재 줄(.cm-activeLine) 배경은 반투명이어야 선택 영역이 가려지지 않는다.
+ * 기본 테마(@codemirror/view, one-dark)의 선택 색상 규칙보다 우선하도록 .cm-editor를 한 번 더 붙인다.
+ */
+const FOCUSED_SELECTION =
+	"&.cm-editor.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground";
+
+/** 에디터 밖을 클릭하면 선택 영역을 해제하고 커서만 남긴다 */
+const clearSelectionOnOutsideClick = ViewPlugin.fromClass(
+	class {
+		private readonly onMouseDown = (event: MouseEvent) => {
+			if (this.view.dom.contains(event.target as Node)) return;
+			const { main } = this.view.state.selection;
+			if (this.view.state.selection.ranges.length === 1 && main.empty) return;
+			this.view.dispatch({ selection: { anchor: main.head } });
+		};
+
+		constructor(private readonly view: EditorView) {
+			view.dom.ownerDocument.addEventListener("mousedown", this.onMouseDown, true);
+		}
+
+		destroy() {
+			this.view.dom.ownerDocument.removeEventListener("mousedown", this.onMouseDown, true);
+		}
+	},
+);
 
 interface AssignmentInfo {
 	dueDate?: string;
@@ -368,12 +396,11 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
 			"&.cm-focused .cm-cursor": {
 				borderLeftColor: "#e6edf3",
 			},
-			"&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection":
-				{
-					backgroundColor: "#264f78",
-				},
+			[FOCUSED_SELECTION]: {
+				backgroundColor: "#264f78",
+			},
 			".cm-activeLine": {
-				backgroundColor: "#161b22",
+				backgroundColor: "rgba(110, 118, 129, 0.1)",
 			},
 			".cm-gutters": {
 				backgroundColor: "#0d1117",
@@ -435,8 +462,11 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
 		".cm-lineNumbers .cm-gutterElement": {
 			color: "#656d76",
 		},
+		[FOCUSED_SELECTION]: {
+			backgroundColor: "#add6ff",
+		},
 		".cm-activeLine": {
-			backgroundColor: "#f6f8fa",
+			backgroundColor: "rgba(208, 215, 222, 0.25)",
 		},
 	});
 
@@ -558,6 +588,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
 					extensions={[
 						...getLanguageExtension(language),
 						editorChromeTheme,
+						clearSelectionOnOutsideClick,
 						theme === "dark" ? darkChromeTheme : lightChromeTheme,
 						syntaxHighlighting(
 							theme === "dark"
