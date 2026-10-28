@@ -245,7 +245,7 @@ export default function CodingPracticePage() {
 					sizes={[65, 35]}
 					direction="horizontal"
 					minSize={200}
-					gutterSize={20}
+					gutterSize={1}
 					gutterStyle={() => ({ backgroundColor: theme === "dark" ? "#2d3748" : "#cbd5e0" })}
 					style={{ display: "flex", width: "100%" }}
 				>
@@ -254,7 +254,7 @@ export default function CodingPracticePage() {
 						sizes={[45, 55]}
 						direction="vertical"
 						minSize={80}
-						gutterSize={20}
+						gutterSize={1}
 						gutterStyle={() => ({ backgroundColor: theme === "dark" ? "#2d3748" : "#cbd5e0" })}
 						style={{ display: "flex", flexDirection: "column", height: "100%" }}
 					>

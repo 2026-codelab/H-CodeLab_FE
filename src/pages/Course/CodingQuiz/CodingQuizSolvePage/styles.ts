@@ -45,75 +45,51 @@ export const PageWrapper = styled.div<{ $theme: "light" | "dark" }>`
 	}
 
 	& .gutter {
+		/* 패널 사이 간격은 1px 선만 남기고, 잡는 영역은 ::before로 양옆 3px씩 넓힌다 */
 		position: relative;
-		transition: background-color 0.2s ease;
 		z-index: 10;
+		padding: 0;
+		background-color: #30363d !important;
+		transition: background-color 0.15s ease;
 		user-select: none;
 		-webkit-user-select: none;
-		-moz-user-select: none;
-		-ms-user-select: none;
-		padding: 8px 0;
-		background-color: #2d3748;
-	}
-	& .gutter.gutter-horizontal {
-		padding: 0 8px;
-	}
-	& .gutter:hover {
-		background-color: #718096 !important;
-	}
-	& .gutter:active {
-		background-color: #718096 !important;
 	}
 	&.light .gutter {
-		background-color: #cbd5e0 !important;
+		background-color: #d0d7de !important;
+	}
+	& .gutter::before {
+		content: "";
+		position: absolute;
+	}
+	& .gutter.gutter-horizontal {
+		width: 1px;
+		flex-shrink: 0;
+		cursor: col-resize !important;
+	}
+	& .gutter.gutter-horizontal::before {
+		top: 0;
+		bottom: 0;
+		left: -3px;
+		right: -3px;
+	}
+	& .gutter.gutter-vertical {
+		height: 1px;
+		flex-shrink: 0;
+		cursor: row-resize !important;
+	}
+	& .gutter.gutter-vertical::before {
+		left: 0;
+		right: 0;
+		top: -3px;
+		bottom: -3px;
+	}
+	& .gutter:hover,
+	& .gutter:active {
+		background-color: #58a6ff !important;
 	}
 	&.light .gutter:hover,
 	&.light .gutter:active {
-		background-color: #9aa0a6 !important;
-	}
-	& .gutter::after {
-		content: "";
-		position: absolute;
-		top: 50%;
-		left: 50%;
-		transform: translate(-50%, -50%);
-		background-color: #151028;
-		border-radius: 1px;
-		opacity: 0.7;
-		transition: opacity 0.2s ease;
-		pointer-events: none;
-	}
-	&.light .gutter::after {
-		background-color: #ffffff;
-	}
-	& .gutter:hover::after {
-		opacity: 1;
-	}
-	& .gutter.gutter-horizontal::after {
-		width: 4px;
-		height: 40px;
-	}
-	& .gutter.gutter-vertical::after {
-		width: 40px;
-		height: 4px;
-	}
-	& .gutter.gutter-horizontal {
-		cursor: col-resize !important;
-		border-left: 1px solid #30363d;
-		border-right: 1px solid #30363d;
-	}
-	&.light .gutter.gutter-horizontal {
-		border-left: 1px solid #e1e4e8;
-		border-right: 1px solid #e1e4e8;
-	}
-	& .gutter.gutter-vertical {
-		cursor: row-resize !important;
-		border-top: 1px solid #30363d;
-		border-bottom: 1px solid #30363d;
-	}
-	&.light .gutter.gutter-vertical {
-		border-top: 1px solid #e1e4e8;
-		border-bottom: 1px solid #e1e4e8;
+		background-color: #0969da !important;
 	}
 `;
 

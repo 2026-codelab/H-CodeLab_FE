@@ -275,7 +275,7 @@ const ProblemSolveView: React.FC<ProblemSolveViewProps> = (props) => {
 					sizes={horizontalSizes}
 					direction="horizontal"
 					minSize={200}
-					gutterSize={20}
+					gutterSize={1}
 					gutterStyle={gutterStyleCallback}
 					onDragEnd={handleHorizontalDragEnd}
 					style={{ display: "flex", width: "100%" }}
@@ -285,7 +285,7 @@ const ProblemSolveView: React.FC<ProblemSolveViewProps> = (props) => {
 						sizes={verticalSizes}
 						direction="vertical"
 						minSize={100}
-						gutterSize={20}
+						gutterSize={1}
 						gutterStyle={gutterStyleCallback}
 						onDragEnd={handleVerticalDragEnd}
 						style={{

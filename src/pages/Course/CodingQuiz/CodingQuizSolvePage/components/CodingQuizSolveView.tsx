@@ -209,7 +209,7 @@ export default function CodingQuizSolveView(d: UseCodingQuizSolveReturn) {
 					sizes={d.horizontalSizes}
 					direction="horizontal"
 					minSize={200}
-					gutterSize={20}
+					gutterSize={1}
 					gutterStyle={d.gutterStyleCallback}
 					onDragEnd={d.handleHorizontalDragEnd}
 					style={{ display: "flex", width: "100%" }}
@@ -219,7 +219,7 @@ export default function CodingQuizSolveView(d: UseCodingQuizSolveReturn) {
 						sizes={d.verticalSizes}
 						direction="vertical"
 						minSize={100}
-						gutterSize={20}
+						gutterSize={1}
 						gutterStyle={d.gutterStyleCallback}
 						onDragEnd={d.handleVerticalDragEnd}
 						style={{
