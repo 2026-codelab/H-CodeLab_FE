@@ -45,51 +45,80 @@ export const PageWrapper = styled.div<{ $theme: "light" | "dark" }>`
 	}
 
 	& .gutter {
-		/* 패널 사이 간격은 1px 선만 남기고, 잡는 영역은 ::before로 양옆 3px씩 넓힌다 */
+		/* 패널 사이 6px 띠 + 가운데 짧은 손잡이. 잡는 영역은 ::before로 양옆 4px씩 넓힌다 */
 		position: relative;
 		z-index: 10;
 		padding: 0;
-		background-color: #30363d !important;
+		flex-shrink: 0;
+		background-color: #161b22 !important;
 		transition: background-color 0.15s ease;
 		user-select: none;
 		-webkit-user-select: none;
 	}
 	&.light .gutter {
-		background-color: #d0d7de !important;
+		background-color: #eaeef2 !important;
 	}
 	& .gutter::before {
 		content: "";
 		position: absolute;
 	}
+	& .gutter::after {
+		content: "";
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		border-radius: 2px;
+		background-color: #484f58;
+		transition: background-color 0.15s ease;
+		pointer-events: none;
+	}
+	&.light .gutter::after {
+		background-color: #afb8c1;
+	}
 	& .gutter.gutter-horizontal {
-		width: 1px;
-		flex-shrink: 0;
+		width: 6px;
 		cursor: col-resize !important;
 	}
 	& .gutter.gutter-horizontal::before {
 		top: 0;
 		bottom: 0;
-		left: -3px;
-		right: -3px;
+		left: -4px;
+		right: -4px;
+	}
+	& .gutter.gutter-horizontal::after {
+		width: 2px;
+		height: 28px;
 	}
 	& .gutter.gutter-vertical {
-		height: 1px;
-		flex-shrink: 0;
+		height: 6px;
 		cursor: row-resize !important;
 	}
 	& .gutter.gutter-vertical::before {
 		left: 0;
 		right: 0;
-		top: -3px;
-		bottom: -3px;
+		top: -4px;
+		bottom: -4px;
+	}
+	& .gutter.gutter-vertical::after {
+		width: 28px;
+		height: 2px;
 	}
 	& .gutter:hover,
 	& .gutter:active {
-		background-color: #58a6ff !important;
+		background-color: rgba(88, 166, 255, 0.25) !important;
 	}
 	&.light .gutter:hover,
 	&.light .gutter:active {
-		background-color: #0969da !important;
+		background-color: rgba(9, 105, 218, 0.15) !important;
+	}
+	& .gutter:hover::after,
+	& .gutter:active::after {
+		background-color: #58a6ff;
+	}
+	&.light .gutter:hover::after,
+	&.light .gutter:active::after {
+		background-color: #0969da;
 	}
 `;
 
