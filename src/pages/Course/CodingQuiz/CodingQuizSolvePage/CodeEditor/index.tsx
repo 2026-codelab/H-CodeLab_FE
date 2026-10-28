@@ -18,6 +18,7 @@ import {
 import { tags } from "@lezer/highlight";
 import * as S from "./styles";
 import { indentationVisuals } from "./editorExtensions";
+import { useRunShortcut } from "./useRunShortcut";
 
 /** 구두점·연산자 구분이 잘 되도록 한쪽은 회색·한쪽은 청록 톤 */
 const READABLE_MONO_FONT =
@@ -159,6 +160,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
 	const isManager = userRole === "ADMIN" || userRole === "TUTOR";
 	const isSubmitDisabled = isSubmitting || (!isAssignmentActive && !isManager);
 	const isActionLocked = isSubmitDisabled || isSaveLocked;
+	useRunShortcut(onSubmitWithOutput, isActionLocked);
 	const disabledReason =
 		!isAssignmentActive && !isManager ? "과제가 비활성화되었습니다" : "";
 	const lockReason =
@@ -538,7 +540,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
 						disabled={isActionLocked}
 						title={
 							lockReason ||
-							"테스트케이스별 상세 결과를 확인할 수 있습니다"
+							"테스트케이스별 상세 결과를 확인할 수 있습니다 (Ctrl/⌘ + Enter)"
 						}
 					>
 						{isSubmitting ? "제출 중..." : "테스트하기"}
