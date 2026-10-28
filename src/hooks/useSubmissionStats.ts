@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import APIService from "../services/APIService";
+import { devLog } from "../utils/devLog";
 
 interface Assignment {
   id: number;
@@ -22,30 +23,30 @@ export const useSubmissionStats = (assignments: Assignment[], sectionId: string 
     }
 
     try {
-      console.log("제출 통계 조회 시작:", { assignments: assignments.length, sectionId });
+      devLog("제출 통계 조회 시작:", { assignments: assignments.length, sectionId });
       const stats: Record<number, SubmissionStat> = {};
 
       for (const assignment of assignments) {
-        console.log(`과제 ${assignment.id} 처리 중:`, assignment);
+        devLog(`과제 ${assignment.id} 처리 중:`, assignment);
 
         if (sectionId) {
-          console.log(`분반별 과제 ${assignment.id} 제출 통계 조회 중...`);
+          devLog(`분반별 과제 ${assignment.id} 제출 통계 조회 중...`);
           const response = await APIService.getAssignmentSubmissionStats(assignment.id, sectionId);
-          console.log(`과제 ${assignment.id} 응답:`, response);
+          devLog(`과제 ${assignment.id} 응답:`, response);
 
           if (response) {
-            console.log(`과제 ${assignment.id} 응답 데이터:`, {
+            devLog(`과제 ${assignment.id} 응답 데이터:`, {
               totalStudents: response.totalStudents,
               problemStats: response.problemStats,
             });
 
             stats[assignment.id] = response;
           } else {
-            console.log(`과제 ${assignment.id} API 응답 없음`);
+            devLog(`과제 ${assignment.id} API 응답 없음`);
           }
         } else {
-          console.log(`전체 과제 ${assignment.id} 제출 통계 조회 중...`);
-          console.log(`과제 ${assignment.id}의 sectionId:`, assignment.sectionId);
+          devLog(`전체 과제 ${assignment.id} 제출 통계 조회 중...`);
+          devLog(`과제 ${assignment.id}의 sectionId:`, assignment.sectionId);
 
           if (!assignment.sectionId) {
             console.error(`과제 ${assignment.id}의 sectionId가 없습니다!`);
@@ -58,15 +59,15 @@ export const useSubmissionStats = (assignments: Assignment[], sectionId: string 
           );
 
           if (response) {
-            console.log(`과제 ${assignment.id} 전체 통계 데이터:`, response);
+            devLog(`과제 ${assignment.id} 전체 통계 데이터:`, response);
             stats[assignment.id] = response;
           } else {
-            console.log(`과제 ${assignment.id} 전체 통계 데이터 없음`);
+            devLog(`과제 ${assignment.id} 전체 통계 데이터 없음`);
           }
         }
       }
 
-      console.log("최종 제출 통계:", stats);
+      devLog("최종 제출 통계:", stats);
       setSubmissionStats(stats);
     } catch (error) {
       console.error("제출 통계 조회 실패:", error);
