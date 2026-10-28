@@ -1,10 +1,9 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useRecoilValue } from "recoil";
-import { fetchEventSource } from "@microsoft/fetch-event-source";
 import { authState } from "../../../../recoil/atoms";
 import apiService from "../../../../services/APIService";
-import tokenManager from "../../../../utils/tokenManager";
+import { connectAuthenticatedSSE } from "../../../../utils/authenticatedSSE";
 import indexedDBManager from "../../../../utils/IndexedDBManager";
 import { getDefaultCode } from "../utils/getDefaultCode";
 import { toSectionLanguage } from "../../../../utils/sectionLanguage";
@@ -751,17 +750,11 @@ export function useProblemSolve() {
 
 			// Step 2: SSE 스트리밍으로 테스트케이스 output 수신
 			const baseURL = process.env.REACT_APP_API_URL || "https://hcl.walab.info/api";
-			const token = tokenManager.getAccessToken();
 
-			await fetchEventSource(
+			await connectAuthenticatedSSE(
 				`${baseURL}/submissions/test/stream/${sessionKey}?sectionId=${resSectionId}`,
 				{
-					method: "GET",
-					headers: {
-						...(token ? { Authorization: `Bearer ${token}` } : {}),
-					},
 					signal: abortController.signal,
-					openWhenHidden: true,
 					onmessage(event) {
 						if (abortController.signal.aborted) return;
 						try {
@@ -841,10 +834,6 @@ export function useProblemSolve() {
 						} catch {
 							// JSON 파싱 실패는 무시
 						}
-					},
-					onerror(err) {
-						if (abortController.signal.aborted) return;
-						throw err;
 					},
 				},
 			);
