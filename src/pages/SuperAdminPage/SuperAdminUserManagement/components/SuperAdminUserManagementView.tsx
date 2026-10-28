@@ -44,7 +44,7 @@ export default function SuperAdminUserManagementView(
 						}}
 					>
 						<option value="ALL">전체 역할</option>
-						<option value="USER">학생</option>
+						<option value="USER">사용자</option>
 						<option value="ADMIN">관리자</option>
 						<option value="SUPER_ADMIN">시스템 관리자</option>
 					</select>
@@ -84,7 +84,6 @@ export default function SuperAdminUserManagementView(
 											}}
 										>
 											<option value="USER">{d.getRoleLabel("USER")}</option>
-											<option value="ADMIN">{d.getRoleLabel("ADMIN")}</option>
 											<option value="SUPER_ADMIN">
 												{d.getRoleLabel("SUPER_ADMIN")}
 											</option>
