@@ -47,12 +47,19 @@ export function useEditorFontSize() {
 			action();
 			return true;
 		};
-		return keymap.of([
-			{ key: "Mod-=", run: run(increase) },
-			{ key: "Mod-+", run: run(increase) },
-			{ key: "Mod--", run: run(decrease) },
-			{ key: "Mod-0", run: run(reset) },
-		]);
+		const bindings: Array<[string, () => void]> = [
+			["=", increase],
+			["+", increase],
+			["-", decrease],
+			["0", reset],
+		];
+		// Mod는 Mac에서 Cmd, Windows에서 Ctrl — Mac에서도 Ctrl 조합을 함께 받아 두 OS 모두 Ctrl/Cmd로 동작
+		return keymap.of(
+			bindings.flatMap(([key, action]) => [
+				{ key: `Mod-${key}`, run: run(action) },
+				{ key: `Ctrl-${key}`, run: run(action) },
+			]),
+		);
 	}, [increase, decrease, reset]);
 
 	return { fontSize, increase, decrease, reset, fontSizeExtensions: [fontSizeTheme, fontSizeKeymap] };
