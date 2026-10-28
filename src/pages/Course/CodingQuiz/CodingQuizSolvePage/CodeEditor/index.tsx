@@ -17,6 +17,7 @@ import {
 } from "@codemirror/language";
 import { tags } from "@lezer/highlight";
 import * as S from "./styles";
+import { indentationVisuals } from "./editorExtensions";
 
 /** 구두점·연산자 구분이 잘 되도록 한쪽은 회색·한쪽은 청록 톤 */
 const READABLE_MONO_FONT =
@@ -564,6 +565,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
 								? readableDarkHighlight
 								: readableLightHighlight,
 						),
+						indentationVisuals,
 					]}
 					theme={theme === "dark" ? "dark" : "light"}
 					onChange={onCodeChange}
