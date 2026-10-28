@@ -81,7 +81,8 @@ export function useQuestionDetailPage() {
 			fetchQuestionDetail();
 		} catch (err) {
 			console.error("Error liking question:", err);
-			alert("추천 중 오류가 발생했습니다");
+			// 본인 글 추천 등 서버가 거부한 이유를 그대로 보여준다
+			alert(err instanceof Error ? err.message : "추천 중 오류가 발생했습니다");
 		}
 	}, [questionId, fetchQuestionDetail]);
 
@@ -92,6 +93,7 @@ export function useQuestionDetailPage() {
 				fetchComments();
 			} catch (err) {
 				console.error("Error liking comment:", err);
+				alert(err instanceof Error ? err.message : "추천 중 오류가 발생했습니다");
 			}
 		},
 		[fetchComments],
