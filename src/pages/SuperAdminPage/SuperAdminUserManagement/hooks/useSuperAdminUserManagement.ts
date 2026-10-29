@@ -27,7 +27,7 @@ export function useSuperAdminUserManagement() {
 
 	const getRoleLabel = useCallback((role: string): string => {
 		const labels: Record<string, string> = {
-			USER: "학생",
+			USER: "사용자",
 			ADMIN: "관리자",
 			SUPER_ADMIN: "시스템 관리자",
 		};

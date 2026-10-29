@@ -1,4 +1,5 @@
 import tokenManager from "../utils/tokenManager";
+import { devLog } from "../utils/devLog";
 
 class APIService {
 	private baseURL: string;
@@ -36,7 +37,7 @@ class APIService {
 			const response = await fetch(url, config);
 
 			if (response.status === 401) {
-				console.log("토큰 만료, 갱신 시도 중...");
+				devLog("토큰 만료, 갱신 시도 중...");
 				try {
 					await tokenManager.refreshToken();
 					const newAccessToken = tokenManager.getAccessToken();
@@ -464,7 +465,7 @@ class APIService {
 		assignmentId: number | string,
 		problemId: number | string,
 	): Promise<any> {
-		console.log("🔗 과제에 문제 추가 API 호출:", {
+		devLog("🔗 과제에 문제 추가 API 호출:", {
 			assignmentId,
 			problemId,
 			url: `/assignments/${assignmentId}/${problemId}`,
@@ -1054,13 +1055,13 @@ class APIService {
 		sectionId: number | string,
 	): Promise<any> {
 		try {
-			console.log(
+			devLog(
 				`API 호출: /sections/${sectionId}/assignments/${assignmentId}/submission-stats`,
 			);
 			const response = await this.request(
 				`/sections/${sectionId}/assignments/${assignmentId}/submission-stats`,
 			);
-			console.log(`API 응답:`, response);
+			devLog(`API 응답:`, response);
 			return response;
 		} catch (error) {
 			console.error("과제 제출 통계 조회 실패:", error);
@@ -1088,13 +1089,13 @@ class APIService {
 		sectionId: number | string,
 	): Promise<any> {
 		try {
-			console.log(
+			devLog(
 				`API 호출: /sections/${sectionId}/assignments/${assignmentId}/student-progress`,
 			);
 			const response = await this.request(
 				`/sections/${sectionId}/assignments/${assignmentId}/student-progress`,
 			);
-			console.log(`API 응답:`, response);
+			devLog(`API 응답:`, response);
 			return response;
 		} catch (error) {
 			console.error("학생 진행 현황 조회 실패:", error);

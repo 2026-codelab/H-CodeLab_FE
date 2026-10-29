@@ -5,14 +5,13 @@ import CodeMirror from "@uiw/react-codemirror";
 import { python } from "@codemirror/lang-python";
 import { java } from "@codemirror/lang-java";
 import { cpp } from "@codemirror/lang-cpp";
-import { fetchEventSource } from "@microsoft/fetch-event-source";
 import { SolvePanel } from "../../CodingQuiz/CodingQuizSolvePage/SolvePanel";
 import * as ES from "../../CodingQuiz/CodingQuizSolvePage/CodeEditor/styles";
 import * as RS from "../../CodingQuiz/CodingQuizSolvePage/ExecutionResult/styles";
 import * as DS from "../../CodingQuiz/CodingQuizSolvePage/ProblemDescription/styles";
 import * as PS from "../../../AssignmentPage/ProblemSolvePage/styles";
 import apiService from "../../../../services/APIService";
-import tokenManager from "../../../../utils/tokenManager";
+import { connectAuthenticatedSSE } from "../../../../utils/authenticatedSSE";
 import { findPracticeLanguage, type PracticeLanguage } from "../languages";
 import * as S from "./styles";
 
@@ -90,15 +89,11 @@ export default function CodingPracticePage() {
 			}
 
 			const baseURL = process.env.REACT_APP_API_URL || "https://hcl.walab.info/api";
-			const token = tokenManager.getAccessToken();
 
-			await fetchEventSource(
+			await connectAuthenticatedSSE(
 				`${baseURL}/run/stream/${sessionKey}?domjudgeProblemId=${encodeURIComponent(domjudgeProblemId)}`,
 				{
-					method: "GET",
-					headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
 					signal: abortController.signal,
-					openWhenHidden: true,
 					onmessage(event) {
 						if (abortController.signal.aborted) return;
 						const data = JSON.parse(event.data);
@@ -112,13 +107,6 @@ export default function CodingPracticePage() {
 							setRunState({ status: "error", message: data.message ?? "실행에 실패했습니다." });
 							abortController.abort();
 						}
-					},
-					onerror(err) {
-						if (!abortController.signal.aborted) {
-							setRunState({ status: "error", message: "연결이 끊어졌습니다. 다시 시도해주세요." });
-						}
-						abortController.abort();
-						throw err;
 					},
 				},
 			);

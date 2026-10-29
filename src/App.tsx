@@ -63,6 +63,8 @@ import SuperAdminCourseManagement from "./pages/SuperAdminPage/SuperAdminCourseM
 import SuperAdminProblemManagement from "./pages/SuperAdminPage/SuperAdminProblemManagement";
 import SuperAdminUserManagement from "./pages/SuperAdminPage/SuperAdminUserManagement";
 import SuperAdminSubmissionManagement from "./pages/SuperAdminPage/SuperAdminSubmissionManagement";
+// 404
+import NotFoundPage from "./pages/NotFoundPage";
 
 /**
  * RecoilRoot 내부에서 useAuth를 한 번만 호출해 전역으로 인증 상태를 복원합니다.
@@ -528,6 +530,8 @@ const App: React.FC = () => {
 							</SuperAdminRoute>
 						}
 					/>
+					{/* 정의되지 않은 모든 경로 → 404 */}
+					<Route path="*" element={<NotFoundPage />} />
 				</Routes>
 				</AuthInitializer>
 			</Router>

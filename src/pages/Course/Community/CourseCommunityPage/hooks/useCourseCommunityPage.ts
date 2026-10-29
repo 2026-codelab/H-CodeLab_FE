@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useRecoilState } from "recoil";
-import { sidebarCollapsedState } from "../../../../../recoil/atoms";
+import { useRecoilState, useRecoilValue } from "recoil";
+import { authState, sidebarCollapsedState } from "../../../../../recoil/atoms";
 import APIService from "../../../../../services/APIService";
 import type {
 	Question,
@@ -15,6 +15,7 @@ import type {
 export function useCourseCommunityPage() {
 	const { sectionId } = useParams<{ sectionId: string }>();
 	const navigate = useNavigate();
+	const auth = useRecoilValue(authState);
 	const [isSidebarCollapsed, setIsSidebarCollapsed] = useRecoilState(
 		sidebarCollapsedState,
 	);
@@ -38,7 +39,9 @@ export function useCourseCommunityPage() {
 	});
 
 	const fetchAssignments = useCallback(async () => {
-		if (!sectionId) return;
+		// 인증 복원이 끝나기 전에 호출되면 서버가 비로그인 요청으로 보고
+		// 오류를 반환하던 문제가 있어(#33/#52), 로그인한 사용자가 확인된 뒤에만 조회한다.
+		if (!sectionId || !auth.user?.id) return;
 		try {
 			const assignmentsData =
 				await APIService.getAssignmentsBySection(sectionId);
@@ -49,7 +52,7 @@ export function useCourseCommunityPage() {
 		} catch (err) {
 			console.error("Error fetching assignments:", err);
 		}
-	}, [sectionId]);
+	}, [sectionId, auth.user?.id]);
 
 	useEffect(() => {
 		fetchAssignments();
