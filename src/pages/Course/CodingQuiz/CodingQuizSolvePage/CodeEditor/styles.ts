@@ -319,3 +319,51 @@ export const EditorScrollArea = styled.div`
     background-color: #ffffff;
   }
 `;
+
+export const FontSizeControl = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 12px;
+  font-weight: normal;
+  color: #8b949e;
+
+  .problem-solve-page.light & {
+    color: #656d76;
+  }
+`;
+
+export const FontSizeButton = styled.button`
+  min-width: 26px;
+  height: 24px;
+  padding: 0 6px;
+  border: 1px solid #30363d;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font-size: 12px;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: rgba(110, 118, 129, 0.2);
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .problem-solve-page.light & {
+    border-color: #d0d7de;
+  }
+`;
+
+export const FontSizeValue = styled.button`
+  min-width: 40px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 12px;
+  cursor: pointer;
+`;

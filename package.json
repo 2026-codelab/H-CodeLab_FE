@@ -20,6 +20,7 @@
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^8.18.0",
     "@react-three/postprocessing": "^3.0.4",
+    "@replit/codemirror-indentation-markers": "^6.5.3",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
