@@ -128,16 +128,6 @@ export const SaveStatus = styled.span<{
   }
 `;
 
-export const ShortcutHint = styled.span`
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 10px;
-  font-style: italic;
-
-  .problem-solve-page.light & {
-    color: rgba(0, 0, 0, 0.5);
-  }
-`;
-
 export const LoadSource = styled.span<{ $source: string }>`
   padding: 4px 8px;
   border-radius: 4px;

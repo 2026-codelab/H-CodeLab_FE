@@ -54,7 +54,6 @@ const ProblemSolvePage: React.FC = () => {
 			handleSubmit={hook.handleSubmit}
 			handleSubmitWithOutput={hook.handleSubmitWithOutput}
 			testcaseResults={hook.testcaseResults}
-			resetTestcaseResults={hook.resetTestcaseResults}
 			totalTestcaseCount={hook.totalTestcaseCount}
 			saveToSession={hook.saveToSession}
 			saveToBackend={hook.saveToBackend}
@@ -62,7 +61,6 @@ const ProblemSolvePage: React.FC = () => {
 			handleHorizontalDragEnd={hook.handleHorizontalDragEnd}
 			handleVerticalDragEnd={hook.handleVerticalDragEnd}
 			gutterStyleCallback={hook.gutterStyleCallback}
-			isDeadlinePassed={hook.isDeadlinePassed}
 			isAssignmentActive={hook.isAssignmentActive}
 			userRole={hook.userRole}
 			showUnsavedModal={hook.showUnsavedModal}

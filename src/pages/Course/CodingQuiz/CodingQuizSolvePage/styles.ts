@@ -208,46 +208,6 @@ export const MainSplit = styled.div`
 	min-height: 0;
 `;
 
-export const ProblemSelectorWrap = styled.div`
-	display: flex;
-	align-items: center;
-	gap: 6px;
-`;
-
-export const ProblemSelectorBtn = styled.button<{ $active?: boolean }>`
-	padding: 6px 12px;
-	border-radius: 6px;
-	border: 1px solid #30363d;
-	background-color: #21262d;
-	color: #c9d1d9;
-	font-size: 12px;
-	font-weight: 600;
-	cursor: pointer;
-	white-space: nowrap;
-	max-width: 200px;
-	overflow: hidden;
-	text-overflow: ellipsis;
-
-	.problem-solve-page.light & {
-		border-color: #e1e4e8;
-		background-color: #ffffff;
-		color: #24292e;
-	}
-
-	${(p) =>
-		p.$active &&
-		`
-		border-color: #58a6ff;
-		background-color: rgba(88, 166, 255, 0.15);
-		color: #58a6ff;
-		.problem-solve-page.light & {
-			border-color: #0969da;
-			background-color: rgba(9, 105, 218, 0.1);
-			color: #0969da;
-		}
-	`}
-`;
-
 export const ProblemNavigateButton = styled.button<{ $theme: "light" | "dark" }>`
 	padding: 6px 12px;
 	border-radius: 6px;

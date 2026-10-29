@@ -128,15 +128,6 @@ export const SummaryDescription = styled.span`
   opacity: 0.75;
 `;
 
-export const SummaryDetails = styled.div`
-  margin-top: 2px;
-`;
-
-export const SummaryDetail = styled.div`
-  font-size: 12px;
-  opacity: 0.7;
-`;
-
 export const SubmissionInfo = styled.div`
   font-size: 11px;
   opacity: 0.55;
@@ -570,58 +561,6 @@ export const Content = styled.div`
 export const CompileOutputSection = styled.div`
   margin-top: 12px;
   margin-bottom: 8px;
-`;
-
-export const DiffHighlighted = styled.div`
-  font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
-  line-height: 1.4;
-`;
-
-export const DiffLine = styled.div<{ $error?: boolean }>`
-  margin: 2px 0;
-  padding: 2px 4px;
-  border-radius: 2px;
-
-  ${(props) =>
-		props.$error &&
-		`
-    background-color: rgba(220, 53, 69, 0.2);
-    color: #ff6b6b;
-    font-weight: 600;
-
-    .problem-solve-page.light & {
-      background-color: rgba(220, 53, 69, 0.1);
-      color: #dc3545;
-    }
-  `}
-`;
-
-export const DiffExpected = styled.span`
-  background-color: rgba(40, 167, 69, 0.2);
-  color: #28a745;
-  padding: 2px 4px;
-  border-radius: 3px;
-  font-weight: 600;
-  text-decoration: underline;
-
-  .problem-solve-page.light & {
-    background-color: rgba(40, 167, 69, 0.1);
-    color: #28a745;
-  }
-`;
-
-export const DiffActual = styled.span`
-  background-color: rgba(220, 53, 69, 0.2);
-  color: #dc3545;
-  padding: 2px 4px;
-  border-radius: 3px;
-  font-weight: 600;
-  text-decoration: underline;
-
-  .problem-solve-page.light & {
-    background-color: rgba(220, 53, 69, 0.1);
-    color: #dc3545;
-  }
 `;
 
 export const HintSection = styled.div`

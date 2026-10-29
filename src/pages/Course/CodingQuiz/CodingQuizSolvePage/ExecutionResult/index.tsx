@@ -52,7 +52,6 @@ interface ExecutionResultProps {
 	submissionResult: SubmissionResult | null;
 	isSubmitting: boolean;
 	testcaseResults?: TestcaseProgress[] | null;
-	onResetTestcaseResults?: () => void;
 	totalTestcaseCount?: number | null;
 	/** 과제 풀이 화면에서만 true로 전달 — 코딩테스트(퀴즈)에서는 힌트를 보여주지 않음 */
 	enableHint?: boolean;
@@ -75,7 +74,6 @@ const ExecutionResult: React.FC<ExecutionResultProps> = ({
 	submissionResult,
 	isSubmitting,
 	testcaseResults,
-	onResetTestcaseResults,
 	totalTestcaseCount,
 	enableHint = false,
 	problemId,

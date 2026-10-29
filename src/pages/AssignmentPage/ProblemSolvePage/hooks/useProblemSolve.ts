@@ -66,7 +66,6 @@ export function useProblemSolve() {
 		active: true,
 	});
 	const [isLoading, setIsLoading] = useState(true);
-	const [isDeadlinePassed, setIsDeadlinePassed] = useState(false);
 	const [isAssignmentActive, setIsAssignmentActive] = useState(true);
 	const navigate = useNavigate();
 	const [horizontalSizes, setHorizontalSizes] = useState([28, 72]);
@@ -236,16 +235,6 @@ export function useProblemSolve() {
 					}
 					// 관리자인 경우: 접근 허용 (조회만 가능, 제출은 불가)
 					console.warn("과제가 비활성화되어 있습니다. (관리자 접근)");
-				}
-
-				// 마감일 체크
-				if (assignmentData?.endDate) {
-					const endDate = new Date(assignmentData.endDate);
-					const now = new Date();
-					const deadlinePassed = now > endDate;
-					setIsDeadlinePassed(deadlinePassed);
-				} else {
-					setIsDeadlinePassed(false);
 				}
 			} catch (error: any) {
 				console.error("정보 로드 실패:", error);
@@ -664,11 +653,6 @@ export function useProblemSolve() {
 		assignmentInfo.dueDate,
 	]);
 
-	// SSE 세션 결과 초기화 (재제출 시 이전 테스트케이스 결과 지우기)
-	const resetTestcaseResults = useCallback(() => {
-		setTestcaseResults(null);
-	}, []);
-
 	const handleSubmitWithOutput = useCallback(async () => {
 		if (!code.trim()) {
 			alert("코드를 작성해주세요.");
@@ -994,7 +978,6 @@ export function useProblemSolve() {
 		submissionResult,
 		isSubmitting,
 		testcaseResults,
-		resetTestcaseResults,
 		totalTestcaseCount,
 		sessionSaveStatus,
 		codeLoadSource,
@@ -1020,7 +1003,6 @@ export function useProblemSolve() {
 		handleHorizontalDragEnd,
 		handleVerticalDragEnd,
 		gutterStyleCallback,
-		isDeadlinePassed,
 		isAssignmentActive,
 		userRole,
 		hasUnsavedChanges,

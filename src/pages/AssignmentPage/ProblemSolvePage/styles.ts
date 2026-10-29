@@ -295,10 +295,6 @@ export const SaveModalContent = styled.div`
 	}
 `;
 
-export const SaveModalIcon = styled.span`
-	font-size: 24px;
-`;
-
 export const SaveModalText = styled.span`
 	font-size: 16px;
 `;

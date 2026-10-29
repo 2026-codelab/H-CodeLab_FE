@@ -45,7 +45,6 @@ export default function CodingQuizSolveView(d: UseCodingQuizSolveReturn) {
 				onBackendSave={d.saveToBackend}
 				saveMode="backend"
 				codeLoadSource={d.codeLoadSource}
-				sessionCleared={d.sessionCleared}
 				isEditLocked={d.isEditLocked}
 				isSaveLocked={d.isEditLocked}
 				showSaveWarning={d.isSaveWarning}

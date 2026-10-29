@@ -54,7 +54,6 @@ interface ProblemSolveViewProps {
 	handleSubmit: () => void;
 	handleSubmitWithOutput: () => void;
 	testcaseResults: Array<{ index: number; result: string }> | null;
-	resetTestcaseResults: () => void;
 	totalTestcaseCount: number | null;
 	saveToSession: () => void;
 	saveToBackend: (showModal?: boolean) => void;
@@ -66,7 +65,6 @@ interface ProblemSolveViewProps {
 		gutterSize: number,
 		index: number,
 	) => Record<string, string>;
-	isDeadlinePassed: boolean;
 	isAssignmentActive: boolean;
 	userRole: string | null;
 	showUnsavedModal: boolean;
@@ -109,7 +107,6 @@ const ProblemSolveView: React.FC<ProblemSolveViewProps> = (props) => {
 		handleSubmit,
 		handleSubmitWithOutput,
 		testcaseResults,
-		resetTestcaseResults,
 		totalTestcaseCount,
 		saveToSession,
 		saveToBackend,
@@ -117,7 +114,6 @@ const ProblemSolveView: React.FC<ProblemSolveViewProps> = (props) => {
 		handleHorizontalDragEnd,
 		handleVerticalDragEnd,
 		gutterStyleCallback,
-		isDeadlinePassed,
 		isAssignmentActive,
 		userRole,
 		showUnsavedModal,
@@ -150,7 +146,6 @@ const ProblemSolveView: React.FC<ProblemSolveViewProps> = (props) => {
 				saveMode="backend"
 				codeLoadSource={codeLoadSource}
 				sessionCleared={sessionCleared}
-				isDeadlinePassed={isDeadlinePassed}
 				isAssignmentActive={isAssignmentActive}
 				userRole={userRole}
 			/>
@@ -160,7 +155,6 @@ const ProblemSolveView: React.FC<ProblemSolveViewProps> = (props) => {
 				submissionResult={submissionResult}
 				isSubmitting={isSubmitting}
 				testcaseResults={testcaseResults}
-				onResetTestcaseResults={resetTestcaseResults}
 				totalTestcaseCount={totalTestcaseCount}
 				enableHint
 				problemId={currentProblem.id}

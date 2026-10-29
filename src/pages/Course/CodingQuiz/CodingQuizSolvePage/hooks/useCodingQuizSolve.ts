@@ -75,7 +75,6 @@ export function useCodingQuizSolve() {
 		"idle" | "saving" | "saved" | "error"
 	>("idle");
 	const [codeLoadSource, setCodeLoadSource] = useState<string | null>(null);
-	const [sessionCleared, setSessionCleared] = useState(false);
 	const [isProblemModalOpen, setIsProblemModalOpen] = useState(false);
 	const [isProblemChanging, setIsProblemChanging] = useState(false);
 	const [showSaveModal, setShowSaveModal] = useState(false);
@@ -546,22 +545,6 @@ export function useCodingQuizSolve() {
 		window.addEventListener("beforeunload", handleBeforeUnload);
 		return () => window.removeEventListener("beforeunload", handleBeforeUnload);
 	}, [code, language]);
-
-	const clearSessionAfterSubmission = useCallback(async () => {
-		if (!sessionId || !selectedProblemId || !sectionId) return;
-		try {
-			await indexedDBManager.deleteSessionCode(
-				selectedProblemId,
-				sectionId,
-				language,
-			);
-			setCodeLoadSource("backend");
-			setSessionCleared(true);
-			setTimeout(() => setSessionCleared(false), 3000);
-		} catch (err) {
-			console.warn("세션 데이터 정리 실패:", err);
-		}
-	}, [sessionId, selectedProblemId, sectionId, language]);
 
 	// "여기서 계속하기" - 기존 세션 강제 인계
 	const handleExamSessionTakeover = useCallback(async () => {
@@ -1078,7 +1061,6 @@ export function useCodingQuizSolve() {
 		isEditLocked,
 		sessionSaveStatus,
 		codeLoadSource,
-		sessionCleared,
 		isLoading,
 		horizontalSizes,
 		verticalSizes,
