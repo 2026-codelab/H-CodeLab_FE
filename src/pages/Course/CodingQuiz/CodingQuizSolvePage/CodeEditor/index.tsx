@@ -8,13 +8,16 @@ import { EditorView } from "@codemirror/view";
 import { linter, lintGutter, type Diagnostic } from "@codemirror/lint";
 import { autocompletion, completionKeymap } from "@codemirror/autocomplete";
 import { indentWithTab } from "@codemirror/commands";
-import { keymap } from "@codemirror/view";
+import { keymap, ViewPlugin } from "@codemirror/view";
 import {
 	bracketMatching,
 	foldGutter,
 	HighlightStyle,
+	indentString,
+	indentUnit,
 	syntaxHighlighting,
 } from "@codemirror/language";
+import type { EditorState } from "@codemirror/state";
 import { tags } from "@lezer/highlight";
 import * as S from "./styles";
 
@@ -103,6 +106,88 @@ const editorChromeTheme = EditorView.theme({
 		fontFamily: READABLE_MONO_FONT,
 	},
 });
+
+/**
+ * 선택 영역(.cm-selectionBackground)은 텍스트 "아래" 레이어에 그려지므로
+ * 현재 줄(.cm-activeLine) 배경은 반투명이어야 선택 영역이 가려지지 않는다.
+ * 기본 테마(@codemirror/view, one-dark)의 선택 색상 규칙보다 우선하도록 .cm-editor를 한 번 더 붙인다.
+ */
+const FOCUSED_SELECTION =
+	"&.cm-editor.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground";
+
+/** 기본 코드 템플릿(getDefaultCode)과 같은 4칸 들여쓰기 */
+const INDENT_UNIT = "    ";
+
+const leadingWhitespace = (text: string) => /^[ \t]*/.exec(text)?.[0] ?? "";
+
+/** 공백 문자열의 열 너비 (탭은 tabSize 기준) */
+const indentColumns = (whitespace: string, tabSize: number) => {
+	let cols = 0;
+	for (const ch of whitespace) cols = ch === "\t" ? cols + tabSize - (cols % tabSize) : cols + 1;
+	return cols;
+};
+
+/**
+ * 여러 줄을 붙여넣을 때 들여쓰기를 붙여넣는 위치에 맞춘다.
+ * 줄 사이의 상대 들여쓰기는 유지하고, 블록 전체를 커서 위치(또는 현재 줄)의 들여쓰기로 옮긴다.
+ * 첫 줄을 글자 중간부터 복사해 첫 줄 들여쓰기를 알 수 없으면, 나머지 줄의 최소 들여쓰기를 기준으로 삼는다.
+ */
+const reindentPastedText = (text: string, state: EditorState) => {
+	const lines = text.replace(/\r\n?/g, "\n").split("\n");
+	if (lines.length < 2 || state.selection.ranges.length !== 1) return text;
+
+	const { from } = state.selection.main;
+	const line = state.doc.lineAt(from);
+	const beforeCursor = state.sliceDoc(line.from, from);
+	const cursorAtIndent = /^[ \t]*$/.test(beforeCursor);
+	const columns = (ws: string) => indentColumns(ws, state.tabSize);
+
+	const targetCols = columns(cursorAtIndent ? beforeCursor : leadingWhitespace(line.text));
+	const firstIndent = leadingWhitespace(lines[0]);
+	const restIndents = lines
+		.slice(1)
+		.filter((l) => l.trim() !== "")
+		.map((l) => columns(leadingWhitespace(l)));
+	const baseCols =
+		firstIndent !== "" || restIndents.length === 0
+			? columns(firstIndent)
+			: Math.min(...restIndents);
+
+	return lines
+		.map((l, i) => {
+			// 첫 줄은 커서 뒤에 이어 붙으므로, 커서가 들여쓰기 위치면 자기 들여쓰기만 제거
+			if (i === 0) return cursorAtIndent ? l.trimStart() : l;
+			if (l.trim() === "") return "";
+			const relative = Math.max(0, columns(leadingWhitespace(l)) - baseCols);
+			return indentString(state, targetCols + relative) + l.trimStart();
+		})
+		.join(state.lineBreak);
+};
+
+const pasteIndentation = [
+	indentUnit.of(INDENT_UNIT),
+	EditorView.clipboardInputFilter.of(reindentPastedText),
+];
+
+/** 에디터 밖을 클릭하면 선택 영역을 해제하고 커서만 남긴다 */
+const clearSelectionOnOutsideClick = ViewPlugin.fromClass(
+	class {
+		private readonly onMouseDown = (event: MouseEvent) => {
+			if (this.view.dom.contains(event.target as Node)) return;
+			const { main } = this.view.state.selection;
+			if (this.view.state.selection.ranges.length === 1 && main.empty) return;
+			this.view.dispatch({ selection: { anchor: main.head } });
+		};
+
+		constructor(private readonly view: EditorView) {
+			view.dom.ownerDocument.addEventListener("mousedown", this.onMouseDown, true);
+		}
+
+		destroy() {
+			this.view.dom.ownerDocument.removeEventListener("mousedown", this.onMouseDown, true);
+		}
+	},
+);
 
 interface AssignmentInfo {
 	dueDate?: string;
@@ -368,12 +453,11 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
 			"&.cm-focused .cm-cursor": {
 				borderLeftColor: "#e6edf3",
 			},
-			"&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection":
-				{
-					backgroundColor: "#264f78",
-				},
+			[FOCUSED_SELECTION]: {
+				backgroundColor: "#264f78",
+			},
 			".cm-activeLine": {
-				backgroundColor: "#161b22",
+				backgroundColor: "rgba(110, 118, 129, 0.1)",
 			},
 			".cm-gutters": {
 				backgroundColor: "#0d1117",
@@ -435,8 +519,11 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
 		".cm-lineNumbers .cm-gutterElement": {
 			color: "#656d76",
 		},
+		[FOCUSED_SELECTION]: {
+			backgroundColor: "#add6ff",
+		},
 		".cm-activeLine": {
-			backgroundColor: "#f6f8fa",
+			backgroundColor: "rgba(208, 215, 222, 0.25)",
 		},
 	});
 
@@ -558,6 +645,8 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
 					extensions={[
 						...getLanguageExtension(language),
 						editorChromeTheme,
+						clearSelectionOnOutsideClick,
+						pasteIndentation,
 						theme === "dark" ? darkChromeTheme : lightChromeTheme,
 						syntaxHighlighting(
 							theme === "dark"
