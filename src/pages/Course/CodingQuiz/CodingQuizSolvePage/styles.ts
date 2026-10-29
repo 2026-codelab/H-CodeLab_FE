@@ -45,31 +45,22 @@ export const PageWrapper = styled.div<{ $theme: "light" | "dark" }>`
 	}
 
 	& .gutter {
+		/* 패널 사이 6px 띠 + 가운데 짧은 손잡이. 잡는 영역은 ::before로 양옆 4px씩 넓힌다 */
 		position: relative;
-		transition: background-color 0.2s ease;
 		z-index: 10;
+		padding: 0;
+		flex-shrink: 0;
+		background-color: #161b22 !important;
+		transition: background-color 0.15s ease;
 		user-select: none;
 		-webkit-user-select: none;
-		-moz-user-select: none;
-		-ms-user-select: none;
-		padding: 8px 0;
-		background-color: #2d3748;
-	}
-	& .gutter.gutter-horizontal {
-		padding: 0 8px;
-	}
-	& .gutter:hover {
-		background-color: #718096 !important;
-	}
-	& .gutter:active {
-		background-color: #718096 !important;
 	}
 	&.light .gutter {
-		background-color: #cbd5e0 !important;
+		background-color: #eaeef2 !important;
 	}
-	&.light .gutter:hover,
-	&.light .gutter:active {
-		background-color: #9aa0a6 !important;
+	& .gutter::before {
+		content: "";
+		position: absolute;
 	}
 	& .gutter::after {
 		content: "";
@@ -77,43 +68,57 @@ export const PageWrapper = styled.div<{ $theme: "light" | "dark" }>`
 		top: 50%;
 		left: 50%;
 		transform: translate(-50%, -50%);
-		background-color: #151028;
-		border-radius: 1px;
-		opacity: 0.7;
-		transition: opacity 0.2s ease;
+		border-radius: 2px;
+		background-color: #484f58;
+		transition: background-color 0.15s ease;
 		pointer-events: none;
 	}
 	&.light .gutter::after {
-		background-color: #ffffff;
-	}
-	& .gutter:hover::after {
-		opacity: 1;
-	}
-	& .gutter.gutter-horizontal::after {
-		width: 4px;
-		height: 40px;
-	}
-	& .gutter.gutter-vertical::after {
-		width: 40px;
-		height: 4px;
+		background-color: #afb8c1;
 	}
 	& .gutter.gutter-horizontal {
+		width: 6px;
 		cursor: col-resize !important;
-		border-left: 1px solid #30363d;
-		border-right: 1px solid #30363d;
 	}
-	&.light .gutter.gutter-horizontal {
-		border-left: 1px solid #e1e4e8;
-		border-right: 1px solid #e1e4e8;
+	& .gutter.gutter-horizontal::before {
+		top: 0;
+		bottom: 0;
+		left: -4px;
+		right: -4px;
+	}
+	& .gutter.gutter-horizontal::after {
+		width: 2px;
+		height: 28px;
 	}
 	& .gutter.gutter-vertical {
+		height: 6px;
 		cursor: row-resize !important;
-		border-top: 1px solid #30363d;
-		border-bottom: 1px solid #30363d;
 	}
-	&.light .gutter.gutter-vertical {
-		border-top: 1px solid #e1e4e8;
-		border-bottom: 1px solid #e1e4e8;
+	& .gutter.gutter-vertical::before {
+		left: 0;
+		right: 0;
+		top: -4px;
+		bottom: -4px;
+	}
+	& .gutter.gutter-vertical::after {
+		width: 28px;
+		height: 2px;
+	}
+	& .gutter:hover,
+	& .gutter:active {
+		background-color: rgba(88, 166, 255, 0.25) !important;
+	}
+	&.light .gutter:hover,
+	&.light .gutter:active {
+		background-color: rgba(9, 105, 218, 0.15) !important;
+	}
+	& .gutter:hover::after,
+	& .gutter:active::after {
+		background-color: #58a6ff;
+	}
+	&.light .gutter:hover::after,
+	&.light .gutter:active::after {
+		background-color: #0969da;
 	}
 `;
 
@@ -201,46 +206,6 @@ export const MainSplit = styled.div`
 	display: flex;
 	overflow: hidden;
 	min-height: 0;
-`;
-
-export const ProblemSelectorWrap = styled.div`
-	display: flex;
-	align-items: center;
-	gap: 6px;
-`;
-
-export const ProblemSelectorBtn = styled.button<{ $active?: boolean }>`
-	padding: 6px 12px;
-	border-radius: 6px;
-	border: 1px solid #30363d;
-	background-color: #21262d;
-	color: #c9d1d9;
-	font-size: 12px;
-	font-weight: 600;
-	cursor: pointer;
-	white-space: nowrap;
-	max-width: 200px;
-	overflow: hidden;
-	text-overflow: ellipsis;
-
-	.problem-solve-page.light & {
-		border-color: #e1e4e8;
-		background-color: #ffffff;
-		color: #24292e;
-	}
-
-	${(p) =>
-		p.$active &&
-		`
-		border-color: #58a6ff;
-		background-color: rgba(88, 166, 255, 0.15);
-		color: #58a6ff;
-		.problem-solve-page.light & {
-			border-color: #0969da;
-			background-color: rgba(9, 105, 218, 0.1);
-			color: #0969da;
-		}
-	`}
 `;
 
 export const ProblemNavigateButton = styled.button<{ $theme: "light" | "dark" }>`

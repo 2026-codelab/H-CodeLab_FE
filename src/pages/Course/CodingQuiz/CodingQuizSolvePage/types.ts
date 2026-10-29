@@ -26,12 +26,6 @@ export interface CurrentProblem {
 	[key: string]: any;
 }
 
-export interface PanelLayout {
-	left: string;
-	topRight: string;
-	bottomRight: string;
-}
-
 export interface ResultInfo {
 	status: string;
 	message: string;

@@ -11,7 +11,6 @@ import type {
 	QuizInfo,
 	SectionInfo,
 	CurrentProblem,
-	PanelLayout,
 	SubmissionResult,
 	Problem,
 	ProblemWorkStatus,
@@ -71,17 +70,11 @@ export function useCodingQuizSolve() {
 	const [horizontalSizes, setHorizontalSizes] = useState([28, 72]);
 	const [verticalSizes, setVerticalSizes] = useState([82, 18]);
 	const [isTimeUp, setIsTimeUp] = useState(false);
-	const [panelLayout, setPanelLayout] = useState<PanelLayout>({
-		left: "description",
-		topRight: "editor",
-		bottomRight: "result",
-	});
 	const [sessionId, setSessionId] = useState<string | null>(null);
 	const [sessionSaveStatus, setSessionSaveStatus] = useState<
 		"idle" | "saving" | "saved" | "error"
 	>("idle");
 	const [codeLoadSource, setCodeLoadSource] = useState<string | null>(null);
-	const [sessionCleared, setSessionCleared] = useState(false);
 	const [isProblemModalOpen, setIsProblemModalOpen] = useState(false);
 	const [isProblemChanging, setIsProblemChanging] = useState(false);
 	const [showSaveModal, setShowSaveModal] = useState(false);
@@ -553,22 +546,6 @@ export function useCodingQuizSolve() {
 		return () => window.removeEventListener("beforeunload", handleBeforeUnload);
 	}, [code, language]);
 
-	const clearSessionAfterSubmission = useCallback(async () => {
-		if (!sessionId || !selectedProblemId || !sectionId) return;
-		try {
-			await indexedDBManager.deleteSessionCode(
-				selectedProblemId,
-				sectionId,
-				language,
-			);
-			setCodeLoadSource("backend");
-			setSessionCleared(true);
-			setTimeout(() => setSessionCleared(false), 3000);
-		} catch (err) {
-			console.warn("세션 데이터 정리 실패:", err);
-		}
-	}, [sessionId, selectedProblemId, sectionId, language]);
-
 	// "여기서 계속하기" - 기존 세션 강제 인계
 	const handleExamSessionTakeover = useCallback(async () => {
 		if (!quizId || !sectionId) return;
@@ -688,35 +665,6 @@ export function useCodingQuizSolve() {
 		setShowUnsavedModal(false);
 		pendingProblemIdRef.current = null;
 	}, []);
-
-	const handlePanelMove = useCallback(
-		(draggedPanelId: string, targetPanelId: string) => {
-			if (draggedPanelId === targetPanelId) return;
-			setPanelLayout((currentLayout) => {
-				let draggedPos: keyof PanelLayout | null = null;
-				let targetPos: keyof PanelLayout | null = null;
-				if (currentLayout.left === draggedPanelId) draggedPos = "left";
-				else if (currentLayout.topRight === draggedPanelId)
-					draggedPos = "topRight";
-				else if (currentLayout.bottomRight === draggedPanelId)
-					draggedPos = "bottomRight";
-				if (currentLayout.left === targetPanelId) targetPos = "left";
-				else if (currentLayout.topRight === targetPanelId)
-					targetPos = "topRight";
-				else if (currentLayout.bottomRight === targetPanelId)
-					targetPos = "bottomRight";
-				if (draggedPos && targetPos) {
-					return {
-						...currentLayout,
-						[draggedPos]: targetPanelId,
-						[targetPos]: draggedPanelId,
-					};
-				}
-				return currentLayout;
-			});
-		},
-		[],
-	);
 
 	/**
 	 * Phase 2 공통 폴링 로직.
@@ -1113,11 +1061,9 @@ export function useCodingQuizSolve() {
 		isEditLocked,
 		sessionSaveStatus,
 		codeLoadSource,
-		sessionCleared,
 		isLoading,
 		horizontalSizes,
 		verticalSizes,
-		panelLayout,
 		isProblemModalOpen,
 		isProblemChanging,
 		setIsProblemModalOpen,
@@ -1128,7 +1074,6 @@ export function useCodingQuizSolve() {
 		handleExamSessionTakeover,
 		handleTimeUp,
 		handleProblemChange,
-		handlePanelMove,
 		handleSubmit,
 		handleSubmitWithOutput,
 		saveToBackend,

@@ -17,11 +17,6 @@ import type { ProblemWorkStatus } from "../../../Course/CodingQuiz/CodingQuizSol
 export type TestcaseResult = { index: number; result: string };
 
 export type PanelKey = "description" | "editor" | "result";
-export type PanelLayout = {
-	left: PanelKey;
-	topRight: PanelKey;
-	bottomRight: PanelKey;
-};
 type SessionSaveStatus = "idle" | "saving" | "saved" | "error";
 type CodeLoadSource = "session" | "backend" | "default" | null;
 type AssignmentProblemSummary = { id: number; title: string; order: number };
@@ -71,16 +66,10 @@ export function useProblemSolve() {
 		active: true,
 	});
 	const [isLoading, setIsLoading] = useState(true);
-	const [isDeadlinePassed, setIsDeadlinePassed] = useState(false);
 	const [isAssignmentActive, setIsAssignmentActive] = useState(true);
 	const navigate = useNavigate();
 	const [horizontalSizes, setHorizontalSizes] = useState([28, 72]);
 	const [verticalSizes, setVerticalSizes] = useState([82, 18]);
-	const [panelLayout, setPanelLayout] = useState<PanelLayout>({
-		left: "description",
-		topRight: "editor",
-		bottomRight: "result",
-	});
 	const [sessionId, setSessionId] = useState<string | null>(null);
 	const [sessionSaveStatus, setSessionSaveStatus] =
 		useState<SessionSaveStatus>("idle");
@@ -246,16 +235,6 @@ export function useProblemSolve() {
 					}
 					// 관리자인 경우: 접근 허용 (조회만 가능, 제출은 불가)
 					console.warn("과제가 비활성화되어 있습니다. (관리자 접근)");
-				}
-
-				// 마감일 체크
-				if (assignmentData?.endDate) {
-					const endDate = new Date(assignmentData.endDate);
-					const now = new Date();
-					const deadlinePassed = now > endDate;
-					setIsDeadlinePassed(deadlinePassed);
-				} else {
-					setIsDeadlinePassed(false);
 				}
 			} catch (error: any) {
 				console.error("정보 로드 실패:", error);
@@ -543,35 +522,6 @@ export function useProblemSolve() {
 		return () => window.removeEventListener("beforeunload", handleBeforeUnload);
 	}, [code, language]);
 
-	const handlePanelMove = useCallback(
-		(draggedPanelId: string, targetPanelId: string) => {
-			if (draggedPanelId === targetPanelId) return;
-			setPanelLayout((currentLayout) => {
-				let draggedPos: keyof PanelLayout | null = null;
-				let targetPos: keyof PanelLayout | null = null;
-				if (currentLayout.left === draggedPanelId) draggedPos = "left";
-				else if (currentLayout.topRight === draggedPanelId)
-					draggedPos = "topRight";
-				else if (currentLayout.bottomRight === draggedPanelId)
-					draggedPos = "bottomRight";
-				if (currentLayout.left === targetPanelId) targetPos = "left";
-				else if (currentLayout.topRight === targetPanelId)
-					targetPos = "topRight";
-				else if (currentLayout.bottomRight === targetPanelId)
-					targetPos = "bottomRight";
-				if (draggedPos && targetPos) {
-					return {
-						...currentLayout,
-						[draggedPos]: targetPanelId as PanelKey,
-						[targetPos]: draggedPanelId as PanelKey,
-					};
-				}
-				return currentLayout;
-			});
-		},
-		[],
-	);
-
 	const handleSubmit = useCallback(async () => {
 		if (!code.trim()) {
 			alert("코드를 작성해주세요.");
@@ -702,11 +652,6 @@ export function useProblemSolve() {
 		assignmentInfo.endDate,
 		assignmentInfo.dueDate,
 	]);
-
-	// SSE 세션 결과 초기화 (재제출 시 이전 테스트케이스 결과 지우기)
-	const resetTestcaseResults = useCallback(() => {
-		setTestcaseResults(null);
-	}, []);
 
 	const handleSubmitWithOutput = useCallback(async () => {
 		if (!code.trim()) {
@@ -1033,7 +978,6 @@ export function useProblemSolve() {
 		submissionResult,
 		isSubmitting,
 		testcaseResults,
-		resetTestcaseResults,
 		totalTestcaseCount,
 		sessionSaveStatus,
 		codeLoadSource,
@@ -1041,12 +985,10 @@ export function useProblemSolve() {
 		isLoading,
 		horizontalSizes,
 		verticalSizes,
-		panelLayout,
 		problems,
 		isProblemModalOpen,
 		isProblemChanging,
 		setIsProblemModalOpen,
-		handlePanelMove,
 		handleProblemChange,
 		problemNav,
 		sectionAssignments,
@@ -1061,7 +1003,6 @@ export function useProblemSolve() {
 		handleHorizontalDragEnd,
 		handleVerticalDragEnd,
 		gutterStyleCallback,
-		isDeadlinePassed,
 		isAssignmentActive,
 		userRole,
 		hasUnsavedChanges,

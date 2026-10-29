@@ -192,11 +192,6 @@ const clearSelectionOnOutsideClick = ViewPlugin.fromClass(
 	},
 );
 
-interface AssignmentInfo {
-	dueDate?: string;
-	endDate?: string;
-}
-
 interface CodeEditorProps {
 	language: string;
 	code: string;
@@ -215,7 +210,6 @@ interface CodeEditorProps {
 	isEditLocked?: boolean;
 	isSaveLocked?: boolean;
 	showSaveWarning?: boolean;
-	isDeadlinePassed?: boolean;
 	isAssignmentActive?: boolean;
 	userRole?: string | null;
 }
@@ -238,7 +232,6 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
 	isEditLocked = false,
 	isSaveLocked = false,
 	showSaveWarning = false,
-	isDeadlinePassed = false,
 	isAssignmentActive = true,
 	userRole = null,
 }) => {
